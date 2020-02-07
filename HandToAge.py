@@ -4,6 +4,7 @@ import re
 import matplotlib.pyplot as plt
 from skimage import io
 import numpy as np
+from scipy.stats import mode
 import cv2
 from torchvision import models
 import torch
@@ -31,11 +32,13 @@ example = io.imread("toy_training/1468.png")
 # mask = np.zeros(example.shape)
 # above_level = example > 165
 # mask[np.where(above_level)] = example[above_level]
-# #mask = mask.astype(int)
+#mask = mask.astype(int)
 #
 # plt.imshow(mask, cmap = 'gray')
 # plt.show()
 #
+# example[above_level] = np.median(example)
+# example[above_level] = mode(example, axis = None)
 # plt.imshow(example, cmap = 'gray')
 # plt.show()
 #
@@ -52,15 +55,21 @@ example = io.imread("toy_training/1468.png")
 # fcn = models.segmentation.fcn_resnet101(pretrained=True).eval()
 
 ## Loading images as X's
-X_train = np.empty([training_labels.shape[0], np.prod(example.shape)])
+#X_train = np.empty([training_labels.shape[0], np.prod(example.shape)])
+
 i = 0
+image_size = np.empty([training_labels.shape[0], 2])
 for filename in training_labels['id'].values:
     #load image
-    image = Image.open('toy_training/'+str(filename)+'.png')
+    image = io.imread('toy_training/'+str(filename)+'.png')
     #reshape image as done previously and store in X_train ith row
-    X_train[i,:] = image.reshape(1, np.prod(image.shape))
+    #X_train[i,:] = image.reshape(1, np.prod(image.shape))
+    image_size[i,:] = image.shape
     #update indexing variable i
     i +=1
 
-
-
+plt.scatter(image_size[:, 0], image_size[:, 1])
+plt.title("Varying image size across dataset")
+plt.xlabel("'Row' pixels")
+plt.ylabel("'Column' pixels")
+plt.show()
