@@ -17,7 +17,7 @@ training_labels_indices = pd.DataFrame(list(training_labels_indices))
 class HandDataset(Dataset):
     """Hand labels dataset."""
 
-    def __init__(self, pandas_df, root_dir, transform=None):
+    def __init__(self, pandas_df, root_dir, transform = None):
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -46,38 +46,37 @@ class HandDataset(Dataset):
 
         return sample
 
-trainDS = HandDataset(training_labels_indices, "toy_training/")
+    def plot_img(self, idx, rescale = 0, multiple_images = 1):
 
-# images can now be called by precising
-# trainDS[2] for the second image or
-# for image in training_labels_indices: bla bla bla
-
-def plot_n_images(DS, n_images = 12, reshape = 0):
-    """
-    This image will give you a matplotlib subplot of n images
-    from a torch Dataset, given a bunch of indices
-    """
-    scale = Rescale(256)
-    fig = plt.figure()
-    for k, img_id in enumerate(np.random.randint(0,
-                                                 len(DS.labels_frame),
-                                                 n_images)):
-        if reshape == 1:
-            img = scale(DS[img_id])
-        else:
-            img = DS[img_id]
-        ax = plt.subplot(3, 4, k+1)
+        img = self.__getitem__(idx)
+        if rescale == 1:
+            scale = Rescale((256, 256))
+            img = scale(img)
         plt.imshow(img)
-        plt.tight_layout()
-        ax.set_title(f'{img.shape}')
+        plt.show()
 
-    plt.show()
+    def plot_n_images(self, n_images=12, rescale=0):
+        """
+        This image will give you a matplotlib subplot of n images
+        from a torch Dataset, given a bunch of indices
+        """
 
-plot_n_images(trainDS)
+        # set seed to get same images this function is called
+        np.random.seed(12435)
+        fig = plt.figure()
+        for k, img_id in enumerate(np.random.randint(0,
+                                                     len(self.labels_frame),
+                                                     n_images)):
+            img = self.__getitem__(img_id)
+            if rescale == 1:
+                scale = Rescale(256)
+                img = scale(img)
+            ax = plt.subplot(3, 4, k + 1)
+            plt.imshow(img)
+            plt.tight_layout()
+            ax.set_title(f'{img.shape}')
+        plt.show()
 
-
-
-########### TRANSFORMS ###########
 
 class Rescale(object):
     """Rescale the image in a sample to a given size.
@@ -112,39 +111,38 @@ class Rescale(object):
 
         return resized_img
 
+## RandomCrop can be used for data augmentation, not interested in this for now
+class RandomCrop(object):
+    """Crop randomly the image in a sample.
 
-## RandomCrop can be used as dataaugmentation, not interested in this for now
-# class RandomCrop(object):
-#     """Crop randomly the image in a sample.
-#
-#     Args:
-#         output_size (tuple or int): Desired output size. If int, square crop
-#             is made.
-#     """
-#
-#     def __init__(self, output_size):
-#         assert isinstance(output_size, (int, tuple))
-#         if isinstance(output_size, int):
-#             self.output_size = (output_size, output_size)
-#         else:
-#             assert len(output_size) == 2
-#             self.output_size = output_size
-#
-#     def __call__(self, sample):
-#         image, landmarks = sample['image'], sample['landmarks']
-#
-#         h, w = image.shape[:2]
-#         new_h, new_w = self.output_size
-#
-#         top = np.random.randint(0, h - new_h)
-#         left = np.random.randint(0, w - new_w)
-#
-#         image = image[top: top + new_h,
-#                       left: left + new_w]
-#
-#         landmarks = landmarks - [left, top]
-#
-#         return {'image': image, 'landmarks': landmarks}
+    Args:
+        output_size (tuple or int): Desired output size. If int, square crop
+            is made.
+    """
+
+    def __init__(self, output_size):
+        assert isinstance(output_size, (int, tuple))
+        if isinstance(output_size, int):
+            self.output_size = (output_size, output_size)
+        else:
+            assert len(output_size) == 2
+            self.output_size = output_size
+
+    def __call__(self, sample):
+        image, landmarks = sample['image'], sample['landmarks']
+
+        h, w = image.shape[:2]
+        new_h, new_w = self.output_size
+
+        top = np.random.randint(0, h - new_h)
+        left = np.random.randint(0, w - new_w)
+
+        image = image[top: top + new_h,
+                      left: left + new_w]
+
+        landmarks = landmarks - [left, top]
+
+        return {'image': image, 'landmarks': landmarks}
 
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
@@ -160,9 +158,19 @@ class ToTensor(object):
                 'landmarks': torch.from_numpy(landmarks)}
 
 
-scale = Rescale(256)
-scaled_img = scale(img)
-plt.imshow(scale(img))
-plt.show()
+trainDS = HandDataset(training_labels_indices, "toy_training/")
 
-plot_n_images(trainDS, reshape = 1)
+# images can now be called by precising
+# trainDS[2] for the second image or
+# for image in training_labels_indices: bla bla bla
+
+trainDS.plot_n_images()
+
+## Sample code to load image, set rescaler, scaled the img and plot it
+# img = trainDS[2]
+# scale = Rescale(256)
+# scaled_img = scale(img)
+# plt.imshow(scale(img))
+# plt.show()
+
+trainDS.plot_n_images(rescale = 1)
