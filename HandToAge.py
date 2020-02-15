@@ -73,3 +73,5 @@ plt.title("Varying image size across dataset")
 plt.xlabel("'Row' pixels")
 plt.ylabel("'Column' pixels")
 plt.show()
+
+
