@@ -6,6 +6,8 @@ from torch.utils.data import Dataset, DataLoader
 from skimage import io, transform
 import matplotlib.pyplot as plt
 import numpy as np
+import multiprocessing
+import torchvision.utils as utils
 plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
 
 
@@ -23,7 +25,7 @@ class HandDataset(Dataset):
             csv_file (string): Path to the csv file with annotations.
             root_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied
-                on a sample.
+                on a image.
         """
         self.labels_frame = pandas_df # pd.read_csv(csv_file)
         self.root_dir = root_dir
@@ -39,23 +41,23 @@ class HandDataset(Dataset):
         img_name = os.path.join(self.root_dir,
                                 self.labels_frame.iloc[idx, 0]+".png")
         image = io.imread(img_name)
-        sample = image
+        image = image.reshape((image.shape[0], image.shape[1], 1))
 
         if self.transform:
-            sample = self.transform(sample)
+            image = self.transform(image)
 
-        return sample
+        return image
 
-    def plot_img(self, idx, rescale = 0, multiple_images = 1):
+    def plot_img(self, idx):
 
         img = self.__getitem__(idx)
-        if rescale == 1:
-            scale = Rescale((256, 256))
-            img = scale(img)
+        if self.transform:
+            img = np.transpose(img, (1, 2, 0))
+        img = img.reshape((img.shape[0], img.shape[1]))
         plt.imshow(img)
         plt.show()
 
-    def plot_n_images(self, n_images=12, rescale=0):
+    def plot_n_images(self, n_images=12):
         """
         This image will give you a matplotlib subplot of n images
         from a torch Dataset, given a bunch of indices
@@ -68,18 +70,21 @@ class HandDataset(Dataset):
                                                      len(self.labels_frame),
                                                      n_images)):
             img = self.__getitem__(img_id)
-            if rescale == 1:
-                scale = Rescale(256)
-                img = scale(img)
+            # standard input size is [1,224,224] when transformed, as this is torch preferred
+            # input format, line below is transposing to [224,224,1]
+            if self.transform:
+                img = np.transpose(img, (1, 2, 0))
+            # this line is reshaping the tensor from [224,224,1] to [224,224]
+            img = img.reshape((img.shape[0], img.shape[1]))
             ax = plt.subplot(3, 4, k + 1)
             plt.imshow(img)
             plt.tight_layout()
-            ax.set_title(f'{img.shape}')
+            ax.set_title(f'({img.shape[0]},{img.shape[1]})')
         plt.show()
 
 
 class Rescale(object):
-    """Rescale the image in a sample to a given size.
+    """Rescale the image in a image to a given size.
 
     Args:
         output_size (tuple or int): Desired output size. If tuple, output is
@@ -92,8 +97,7 @@ class Rescale(object):
         assert isinstance(output_size, (int, tuple))
         self.output_size = output_size
 
-    def __call__(self, sample):
-        image = sample
+    def __call__(self, image):
 
         # line below equivalent to image.shape for 2D tensors
         h, w = image.shape[:2]
@@ -111,9 +115,9 @@ class Rescale(object):
 
         return resized_img
 
-## RandomCrop can be used for data augmentation, not interested in this for now
+
 class RandomCrop(object):
-    """Crop randomly the image in a sample.
+    """Crop randomly the image in a image.
 
     Args:
         output_size (tuple or int): Desired output size. If int, square crop
@@ -128,49 +132,75 @@ class RandomCrop(object):
             assert len(output_size) == 2
             self.output_size = output_size
 
-    def __call__(self, sample):
-        image, landmarks = sample['image'], sample['landmarks']
+    def __call__(self, image):
 
         h, w = image.shape[:2]
         new_h, new_w = self.output_size
 
+        # getting new top of the image by choosing any random
+        # number between 0 and height - new_height
+        # must be: h > new_h and w > new_w
         top = np.random.randint(0, h - new_h)
         left = np.random.randint(0, w - new_w)
 
+        # new image is selected between the calculated top, which would
+        # actually be bottom I feel and top +new_height
         image = image[top: top + new_h,
                       left: left + new_w]
 
-        landmarks = landmarks - [left, top]
 
-        return {'image': image, 'landmarks': landmarks}
+
+        return image
 
 class ToTensor(object):
-    """Convert ndarrays in sample to Tensors."""
+    """Convert ndarrays in image to Tensors."""
 
-    def __call__(self, sample):
-        image, landmarks = sample['image'], sample['landmarks']
+    def __call__(self, image):
 
         # swap color axis because
         # numpy image: H x W x C
         # torch image: C X H X W
         image = image.transpose((2, 0, 1))
-        return {'image': torch.from_numpy(image),
-                'landmarks': torch.from_numpy(landmarks)}
+        return torch.from_numpy(image)
 
 
-trainDS = HandDataset(training_labels_indices, "toy_training/")
-
-# images can now be called by precising
-# trainDS[2] for the second image or
-# for image in training_labels_indices: bla bla bla
+trainDS = HandDataset(training_labels_indices, "toy_training/",
+                      transform = transforms.Compose([Rescale(256),
+                                                      RandomCrop(224),
+                                                      ToTensor()]))
 
 trainDS.plot_n_images()
 
-## Sample code to load image, set rescaler, scaled the img and plot it
+# detect number of cores
+cores = multiprocessing.cpu_count()
+
+dataloader = DataLoader(trainDS, batch_size= 20,
+                        shuffle = True, num_workers= cores)
+
+def show_batch(sample_batched):
+    """Show image with landmarks for a batch of samples."""
+    images_batch = sample_batched
+
+    grid = utils.make_grid(images_batch, nrow = 5)
+    plt.imshow(grid.numpy().transpose((1, 2, 0)))
+    plt.show()
+
+
+for i_batch, sample_batched in enumerate(dataloader):
+    print(i_batch, sample_batched.size())
+
+    # observe 4th batch and stop.
+    if i_batch == 3:
+        plt.figure()
+        show_batch(sample_batched)
+        plt.axis('off')
+        plt.ioff()
+        plt.show()
+        break
+
+## image code to load image, set rescaler, scaled the img and plot it
 # img = trainDS[2]
 # scale = Rescale(256)
 # scaled_img = scale(img)
 # plt.imshow(scale(img))
 # plt.show()
-
-trainDS.plot_n_images(rescale = 1)
