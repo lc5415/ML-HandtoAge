@@ -18,11 +18,12 @@ def main():
     # training
     training_labels_indices = map(lambda filename: filename.split('.')[0], os.listdir("labelled/train/"))
     training_labels_indices = pd.DataFrame(list(training_labels_indices))
+    data_labels = pd.read_csv("boneage-training-dataset.csv")
 
     class HandDataset(Dataset):
         """Hand labels dataset."""
 
-        def __init__(self, pandas_df, root_dir, transform=None):
+        def __init__(self, pandas_df, data_labels,  root_dir, transform=None):
             """
             Args:
                 csv_file (string): Path to the csv file with annotations.
@@ -30,25 +31,28 @@ def main():
                 transform (callable, optional): Optional transform to be applied
                     on a image.
             """
-            self.labels_frame = pandas_df  # pd.read_csv(csv_file)
+            self.labels_index = pandas_df  # pd.read_csv(csv_file)
+            self.labels_frame = data_labels
             self.root_dir = root_dir
             self.transform = transform
 
         def __len__(self):
-            return len(self.labels_frame)
+            return len(self.labels_index)
 
         def __getitem__(self, idx):
             if torch.is_tensor(idx):
                 idx = idx.tolist()
 
             img_name = os.path.join(self.root_dir,
-                                    self.labels_frame.iloc[idx, 0] + ".png")
+                                    self.labels_index.iloc[idx, 0] + ".png")
             image = io.imread(img_name)
             image = image.reshape((image.shape[0], image.shape[1], 1))
 
             if self.transform:
                 image = self.transform(image)
-
+            # normalize tensor by mean and std
+            ## get label along with image
+            #
             return image
 
         def plot_img(self, idx):
@@ -70,7 +74,7 @@ def main():
             np.random.seed(12435)
             fig = plt.figure()
             for k, img_id in enumerate(np.random.randint(0,
-                                                         len(self.labels_frame),
+                                                         len(self.labels_index),
                                                          n_images)):
                 img = self.__getitem__(img_id)
                 # standard input size is [1,224,224] when transformed, as this is torch preferred
@@ -100,7 +104,7 @@ def main():
             np.random.seed(12435)
             fig = plt.figure()
             for k, img_id in enumerate(np.random.randint(0,
-                                                         len(self.labels_frame),
+                                                         len(self.labels_index),
                                                          n_images)):
                 img = self.__getitem__(img_id)
                 # standard input size is [1,224,224] when transformed, as this is torch preferred
@@ -209,7 +213,9 @@ def main():
             image = image.transpose((2, 0, 1))
             return torch.from_numpy(image)
 
-    trainDS = HandDataset(training_labels_indices, "labelled/train/",
+    trainDS = HandDataset(training_labels_indices,
+                          data_labels,
+                          "labelled/train/",
                           transform=transforms.Compose(
                               [Rescale(256),
                                RandomCrop(224),
