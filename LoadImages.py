@@ -9,6 +9,7 @@ import numpy as np
 import multiprocessing
 import torchvision.utils as utils
 from MyTransforms import Rescale, RandomCrop, ToTensor
+from torchvision.transforms import Normalize
 from torch.nn.modules.normalization import GroupNorm
 plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
 
@@ -44,21 +45,32 @@ def main():
             if torch.is_tensor(idx):
                 idx = idx.tolist()
 
+            image_id = self.labels_index.iloc[idx, 0]
             img_name = os.path.join(self.root_dir,
-                                    self.labels_index.iloc[idx, 0] + ".png")
+                                     image_id + ".png")
             image = io.imread(img_name)
             image = image.reshape((image.shape[0], image.shape[1], 1))
 
-            if self.transform:
-                image = self.transform(image)
-            # normalize tensor by mean and std
             ## get label along with image
-            #
-            return image
+            age = self.labels_frame.loc[self.labels_frame.id == int(image_id), 'boneage']
+
+            sample = {'image': image, 'age': age}
+
+            if self.transform:
+                sample = self.transform(sample)
+                # Instance Normalization
+                image = sample['image']
+                mean, std = torch.mean(image), torch.std(image)
+                image = (image - mean)/std
+
+            sample = {'image': image, 'age': age}
+
+            return sample
 
         def plot_img(self, idx):
 
-            img = self.__getitem__(idx)
+            img = self.__getitem__(idx)['image']
+
             if self.transform:
                 img = np.transpose(img, (1, 2, 0))
             img = img.reshape((img.shape[0], img.shape[1]))
@@ -77,7 +89,8 @@ def main():
             for k, img_id in enumerate(np.random.randint(0,
                                                          len(self.labels_index),
                                                          n_images)):
-                img = self.__getitem__(img_id)
+                img = self.__getitem__(img_id)['image']
+
                 # standard input size is [1,224,224] when transformed, as this is torch preferred
                 # input format, line below is transposing to [224,224,1]
                 if self.transform:
@@ -107,7 +120,7 @@ def main():
             for k, img_id in enumerate(np.random.randint(0,
                                                          len(self.labels_index),
                                                          n_images)):
-                img = self.__getitem__(img_id)
+                img = self.__getitem__(img_id)['image']
                 # standard input size is [1,224,224] when transformed, as this is torch preferred
                 # input format, line below is transposing to [224,224,1]
                 if self.transform:

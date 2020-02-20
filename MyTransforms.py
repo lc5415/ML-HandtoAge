@@ -16,8 +16,9 @@ class Rescale(object):
         assert isinstance(output_size, (int, tuple))
         self.output_size = output_size
 
-    def __call__(self, image):
+    def __call__(self, sample):
 
+        image = sample.get('image')
         # line below equivalent to image.shape for 2D tensors
         h, w = image.shape[:2]
         if isinstance(self.output_size, int):
@@ -32,7 +33,7 @@ class Rescale(object):
 
         resized_img = transform.resize(image, (new_h, new_w))
 
-        return resized_img
+        return {'image': resized_img, 'age': sample['age']}
 
 
 class RandomCrop(object):
@@ -51,8 +52,9 @@ class RandomCrop(object):
             assert len(output_size) == 2
             self.output_size = output_size
 
-    def __call__(self, image):
+    def __call__(self, sample):
 
+        image = sample['image']
         h, w = image.shape[:2]
         new_h, new_w = self.output_size
 
@@ -67,15 +69,17 @@ class RandomCrop(object):
         image = image[top: top + new_h,
                 left: left + new_w]
 
-        return image
+        return {'image': image, 'age': sample['age']}
 
 
 class ToTensor(object):
     """Convert ndarrays in image to Tensors."""
 
-    def __call__(self, image):
+    def __call__(self, sample):
         # swap color axis because
         # numpy image: H x W x C
         # torch image: C X H X W
+        image = sample['image']
         image = image.transpose((2, 0, 1))
-        return torch.from_numpy(image)
+        return {'image': torch.from_numpy(image), 'age': sample['age']}
+
