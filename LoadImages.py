@@ -53,7 +53,7 @@ def main():
 
             ## get label along with image
             age = self.labels_frame.loc[self.labels_frame.id == int(image_id), 'boneage']
-
+            age = np.array(age)
             sample = {'image': image, 'age': age}
 
             if self.transform:
@@ -177,14 +177,16 @@ def main():
 
     def show_batch(sample_batched):
         """Show image with landmarks for a batch of samples."""
-        images_batch = sample_batched
+        images_batch = sample_batched['image']
 
         grid = utils.make_grid(images_batch, nrow=5)
         plt.imshow(grid.numpy().transpose((1, 2, 0)))
         plt.show()
 
     for i_batch, sample_batched in enumerate(dataloader):
-        print(i_batch, sample_batched.size())
+
+        print(i_batch, sample_batched['image'].size(),
+              sample_batched['age'].size())
 
         # observe 4th batch and stop.
         if i_batch == 3: # dataloader.batch_size - 1:

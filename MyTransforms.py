@@ -81,5 +81,6 @@ class ToTensor(object):
         # torch image: C X H X W
         image = sample['image']
         image = image.transpose((2, 0, 1))
-        return {'image': torch.from_numpy(image), 'age': sample['age']}
+        return {'image': torch.from_numpy(image),
+                'age': torch.from_numpy(sample['age'])}
 
