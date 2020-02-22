@@ -143,7 +143,7 @@ class HandDataset(Dataset):
             ax.label_outer()
         plt.show()
 
-def Load(dataset, batch_size = 20):
+def Load(dataset, batch_size = 20, plot = 0):
     '''Given an object of the class torch.utils.data.Dataset this function
     returns a dataloader with the given images and the given labels and plots some stuff
     allong the way'''
@@ -154,6 +154,7 @@ def Load(dataset, batch_size = 20):
         batch_size = dataset.labels_index.shape[0]
     dataloader = DataLoader(dataset, batch_size=batch_size,
                             shuffle=True, num_workers=cores)
+
 
     def show_batch(sample_batched):
         """Show image with landmarks for a batch of samples."""
@@ -169,7 +170,7 @@ def Load(dataset, batch_size = 20):
               sample_batched['age'].size())
 
         # observe 4th batch and stop.
-        if i_batch == 3: # dataloader.batch_size - 1:
+        if i_batch == 3 and plot != 0: # dataloader.batch_size - 1:
             plt.figure()
             show_batch(sample_batched)
             plt.axis('off')
@@ -208,8 +209,10 @@ def main():
                               ToTensor()
                               ]))
 
-    trainDS.plot_n_images()
-    trainDS.n_histograms()
+    plot = 0
+    if plot != 0:
+        trainDS.plot_n_images()
+        trainDS.n_histograms()
 
     trainLoader = Load(trainDS)
     testLoader = Load(testDS, batch_size= "full")
