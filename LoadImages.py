@@ -143,15 +143,16 @@ class HandDataset(Dataset):
             ax.label_outer()
         plt.show()
 
-def Load(dataset):
+def Load(dataset, batch_size = 20):
     '''Given an object of the class torch.utils.data.Dataset this function
     returns a dataloader with the given images and the given labels and plots some stuff
     allong the way'''
 
     # detect number of cores
     cores = multiprocessing.cpu_count()-1
-
-    dataloader = DataLoader(dataset, batch_size=20,
+    if batch_size == "full":
+        batch_size = dataset.labels_index.shape[0]
+    dataloader = DataLoader(dataset, batch_size=batch_size,
                             shuffle=True, num_workers=cores)
 
     def show_batch(sample_batched):
@@ -211,7 +212,7 @@ def main():
     trainDS.n_histograms()
 
     trainLoader = Load(trainDS)
-    testLoader = Load(testDS)
+    testLoader = Load(testDS, batch_size= "full")
 
     return trainLoader, testLoader
 

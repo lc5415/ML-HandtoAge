@@ -4,17 +4,28 @@ import torch.optim as optim
 import torch.nn.functional as F
 import argparse
 from torch.optim.lr_scheduler import StepLR
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms # maybe will use this in the future
 import LoadImages
-import MyResNet
+from MyResNet import ResNet, BasicBlock
 
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = data.to(device), target.to(device)
+    for batch_idx, batch in enumerate(train_loader):
+        # get the inputs in correct format and pass them onto CPU/GPU
+        data, target = batch['image'].to(device), batch['age'].to(device)
+
+        data = data.double()
+        target = target.double()
+        # initialize the parameters at 0
         optimizer.zero_grad()
+
         output = model(data)
-        loss = F.nll_loss(output, target)
+        # compute loss
+        ## change code below from -- we don't wanna be using NLL loss for regression
+        # -- loss = F.nll_loss(output, target)
+        ## to
+        loss = F.mse_loss(output, target)
+
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
@@ -28,8 +39,8 @@ def test(args, model, device, test_loader):
     test_loss = 0
     correct = 0
     with torch.no_grad():
-        for data, target in test_loader:
-            data, target = data.to(device), target.to(device)
+        for batch in test_loader:
+            data, target = batch['image'].to(device), batch['age'].to(device)
             output = model(data)
             test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
@@ -75,7 +86,10 @@ def main():
 
     train_loader, test_loader = LoadImages.main()
 
-    model = MyResNet.ResNet().to(device)
+    net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=1)
+    net = net.double()
+    model = net.to(device)
+
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
