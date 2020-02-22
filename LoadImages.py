@@ -14,165 +14,144 @@ from torch.nn.modules.normalization import GroupNorm
 plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
 
 
+class HandDataset(Dataset):
+    """Hand labels dataset."""
 
-def main():
-    # extract image names from shuffle of images I have obtained
-    # training
-    training_labels_indices = map(lambda filename: filename.split('.')[0], os.listdir("labelled/train/"))
-    training_labels_indices = pd.DataFrame(list(training_labels_indices))
-    data_labels = pd.read_csv("boneage-training-dataset.csv")
+    def __init__(self, pandas_df, data_labels, root_dir, transform=None):
+        """
+        Args:
+            csv_file (string): Path to the csv file with annotations.
+            root_dir (string): Directory with all the images.
+            transform (callable, optional): Optional transform to be applied
+                on a image.
+        """
+        self.labels_index = pandas_df  # pd.read_csv(csv_file)
+        self.labels_frame = data_labels
+        self.root_dir = root_dir
+        self.transform = transform
 
-    class HandDataset(Dataset):
-        """Hand labels dataset."""
+    def __len__(self):
+        return len(self.labels_index)
 
-        def __init__(self, pandas_df, data_labels,  root_dir, transform=None):
-            """
-            Args:
-                csv_file (string): Path to the csv file with annotations.
-                root_dir (string): Directory with all the images.
-                transform (callable, optional): Optional transform to be applied
-                    on a image.
-            """
-            self.labels_index = pandas_df  # pd.read_csv(csv_file)
-            self.labels_frame = data_labels
-            self.root_dir = root_dir
-            self.transform = transform
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
 
-        def __len__(self):
-            return len(self.labels_index)
+        image_id = self.labels_index.iloc[idx, 0]
+        img_name = os.path.join(self.root_dir,
+                                image_id + ".png")
+        image = io.imread(img_name)
+        image = image.reshape((image.shape[0], image.shape[1], 1))
 
-        def __getitem__(self, idx):
-            if torch.is_tensor(idx):
-                idx = idx.tolist()
+        ## get label along with image
+        age = self.labels_frame.loc[self.labels_frame.id == int(image_id), 'boneage']
+        age = np.array(age)
+        sample = {'image': image, 'age': age}
 
-            image_id = self.labels_index.iloc[idx, 0]
-            img_name = os.path.join(self.root_dir,
-                                     image_id + ".png")
-            image = io.imread(img_name)
-            image = image.reshape((image.shape[0], image.shape[1], 1))
+        if self.transform:
+            sample = self.transform(sample)
+            # Instance Normalization
+            image = sample['image']
+            mean, std = torch.mean(image), torch.std(image)
+            image = (image - mean) / std
 
-            ## get label along with image
-            age = self.labels_frame.loc[self.labels_frame.id == int(image_id), 'boneage']
-            age = np.array(age)
-            sample = {'image': image, 'age': age}
+        sample = {'image': image, 'age': age}
 
-            if self.transform:
-                sample = self.transform(sample)
-                # Instance Normalization
-                image = sample['image']
-                mean, std = torch.mean(image), torch.std(image)
-                image = (image - mean)/std
+        return sample
 
-            sample = {'image': image, 'age': age}
+    def plot_img(self, idx):
 
-            return sample
+        img = self.__getitem__(idx)['image']
 
-        def plot_img(self, idx):
+        if self.transform:
+            img = np.transpose(img, (1, 2, 0))
+        img = img.reshape((img.shape[0], img.shape[1]))
+        plt.imshow(img)
+        plt.show()
 
-            img = self.__getitem__(idx)['image']
+    def plot_n_images(self, n_images=20):
+        """
+        This image will give you a matplotlib subplot of n images
+        from a torch Dataset, given a bunch of indices
+        """
 
+        # set seed to get same images this function is called
+        np.random.seed(12435)
+        fig = plt.figure()
+        for k, img_id in enumerate(np.random.randint(0,
+                                                     len(self.labels_index),
+                                                     n_images)):
+            img = self.__getitem__(img_id)['image']
+
+            # standard input size is [1,224,224] when transformed, as this is torch preferred
+            # input format, line below is transposing to [224,224,1]
             if self.transform:
                 img = np.transpose(img, (1, 2, 0))
+            # this line is reshaping the tensor from [224,224,1] to [224,224]
             img = img.reshape((img.shape[0], img.shape[1]))
+            ax = plt.subplot(4, 5, k + 1)
             plt.imshow(img)
-            plt.show()
+            plt.tight_layout()
+            ax.set_title(f'{img_id}')
 
-        def plot_n_images(self, n_images=20):
-            """
-            This image will give you a matplotlib subplot of n images
-            from a torch Dataset, given a bunch of indices
-            """
-
-            # set seed to get same images this function is called
-            np.random.seed(12435)
-            fig = plt.figure()
-            for k, img_id in enumerate(np.random.randint(0,
-                                                         len(self.labels_index),
-                                                         n_images)):
-                img = self.__getitem__(img_id)['image']
-
-                # standard input size is [1,224,224] when transformed, as this is torch preferred
-                # input format, line below is transposing to [224,224,1]
-                if self.transform:
-                    img = np.transpose(img, (1, 2, 0))
-                # this line is reshaping the tensor from [224,224,1] to [224,224]
-                img = img.reshape((img.shape[0], img.shape[1]))
-                ax = plt.subplot(4, 5, k + 1)
-                plt.imshow(img)
-                plt.tight_layout()
-                ax.set_title(f'{img_id}')
-
-            if img.shape[0] == img.shape[1]:
-                all_axes = fig.get_axes()
-                for ax in all_axes:
-                    ax.label_outer()
-            plt.show()
-
-        def n_histograms(self, n_images=20):
-            """
-            This image will give you a matplotlib subplot of n images
-            from a torch Dataset, given a bunch of indices
-            """
-
-            # set seed to get same images this function is called
-            np.random.seed(12435)
-            fig = plt.figure()
-            for k, img_id in enumerate(np.random.randint(0,
-                                                         len(self.labels_index),
-                                                         n_images)):
-                img = self.__getitem__(img_id)['image']
-                # standard input size is [1,224,224] when transformed, as this is torch preferred
-                # input format, line below is transposing to [224,224,1]
-                if self.transform:
-                    img = np.transpose(img, (1, 2, 0))
-                # this line is reshaping the tensor from [224,224,1] to [224,224]
-                img = img.reshape((img.shape[0], img.shape[1]))
-                ax = plt.subplot(4, 5, k + 1)
-                plt.hist(img.flatten())
-                img_mean = torch.mean(img)
-                img_median = torch.median(img)
-                plt.axvline(img_mean,
-                            color='g',
-                            linestyle='dashed',
-                            linewidth=1)
-                plt.axvline(img_median,
-                            color='r',
-                            linestyle='dashed',
-                            linewidth=1)
-                min_ylim, max_ylim = plt.ylim()
-                min_xlim, max_xlim = plt.xlim()
-                plt.text(0.5*max_xlim, max_ylim*0.8,
-                         f"{img_mean-img_median:.2f}")
-                plt.tight_layout()
-                #ax.set_title(f'({img.shape[0]},{img.shape[1]})')
-
+        if img.shape[0] == img.shape[1]:
             all_axes = fig.get_axes()
             for ax in all_axes:
                 ax.label_outer()
-            plt.show()
+        plt.show()
 
-    trainDS = HandDataset(training_labels_indices,
-                          data_labels,
-                          "labelled/train/",
-                          transform=transforms.Compose(
-                              [Rescale(256),
-                               RandomCrop(224),
-                               ToTensor()
-                               ]))
-                        # I'm not normalizing this way as I am normalizing on
-                        # per image basis
-                          # ,
-                          #      transforms.Normalize(
-                          #          mean=[0.406],
-                          #          std=[0.225])]))
+    def n_histograms(self, n_images=20):
+        """
+        This image will give you a matplotlib subplot of n images
+        from a torch Dataset, given a bunch of indices
+        """
 
-    trainDS.plot_n_images()
-    trainDS.n_histograms()
+        # set seed to get same images this function is called
+        np.random.seed(12435)
+        fig = plt.figure()
+        for k, img_id in enumerate(np.random.randint(0,
+                                                     len(self.labels_index),
+                                                     n_images)):
+            img = self.__getitem__(img_id)['image']
+            # standard input size is [1,224,224] when transformed, as this is torch preferred
+            # input format, line below is transposing to [224,224,1]
+            if self.transform:
+                img = np.transpose(img, (1, 2, 0))
+            # this line is reshaping the tensor from [224,224,1] to [224,224]
+            img = img.reshape((img.shape[0], img.shape[1]))
+            ax = plt.subplot(4, 5, k + 1)
+            plt.hist(img.flatten())
+            img_mean = torch.mean(img)
+            img_median = torch.median(img)
+            plt.axvline(img_mean,
+                        color='g',
+                        linestyle='dashed',
+                        linewidth=1)
+            plt.axvline(img_median,
+                        color='r',
+                        linestyle='dashed',
+                        linewidth=1)
+            min_ylim, max_ylim = plt.ylim()
+            min_xlim, max_xlim = plt.xlim()
+            plt.text(0.5 * max_xlim, max_ylim * 0.8,
+                     f"{img_mean - img_median:.2f}")
+            plt.tight_layout()
+            # ax.set_title(f'({img.shape[0]},{img.shape[1]})')
+
+        all_axes = fig.get_axes()
+        for ax in all_axes:
+            ax.label_outer()
+        plt.show()
+
+def Load(dataset):
+    '''Given an object of the class torch.utils.data.Dataset this function
+    returns a dataloader with the given images and the given labels and plots some stuff
+    allong the way'''
 
     # detect number of cores
-    cores = multiprocessing.cpu_count()
+    cores = multiprocessing.cpu_count()-1
 
-    dataloader = DataLoader(trainDS, batch_size=20,
+    dataloader = DataLoader(dataset, batch_size=20,
                             shuffle=True, num_workers=cores)
 
     def show_batch(sample_batched):
@@ -199,12 +178,42 @@ def main():
 
     return dataloader
 
-## image code to load image, set rescaler, scaled the img and plot it
-# img = trainDS[2]
-# scale = Rescale(256)
-# scaled_img = scale(img)
-# plt.imshow(scale(img))
-# plt.show()
+def main():
+    # extract image names from shuffle of images I have obtained
+    # training
+    training_labels_indices = map(lambda filename: filename.split('.')[0], os.listdir("labelled/train/"))
+    training_labels_indices = pd.DataFrame(list(training_labels_indices))
+
+    test_labels_indices = map(lambda filename: filename.split('.')[0], os.listdir("labelled/test/"))
+    test_labels_indices = pd.DataFrame(list(test_labels_indices))
+
+    data_labels = pd.read_csv("boneage-training-dataset.csv")
+
+    trainDS = HandDataset(training_labels_indices,
+                          data_labels,
+                          "labelled/train/",
+                          transform=transforms.Compose(
+                              [Rescale(256),
+                               RandomCrop(224),
+                               ToTensor()
+                               ]))
+
+    testDS = HandDataset(test_labels_indices,
+                         data_labels,
+                         "labelled/test/",
+                         transform=transforms.Compose(
+                             [Rescale(256),
+                              RandomCrop(224),
+                              ToTensor()
+                              ]))
+
+    trainDS.plot_n_images()
+    trainDS.n_histograms()
+
+    trainLoader = Load(trainDS)
+    testLoader = Load(testDS)
+
+    return trainLoader, testLoader
 
 if __name__ == '__main__':
     main()
