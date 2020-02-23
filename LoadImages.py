@@ -153,7 +153,7 @@ def Load(dataset, batch_size = 20, plot = 0):
     if batch_size == "full":
         batch_size = dataset.labels_index.shape[0]
     dataloader = DataLoader(dataset, batch_size=batch_size,
-                            shuffle=True, num_workers=cores)
+                            shuffle=True, num_workers=2)
 
 
     def show_batch(sample_batched):
