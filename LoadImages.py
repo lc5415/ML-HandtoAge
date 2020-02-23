@@ -149,11 +149,11 @@ def Load(dataset, batch_size = 20, plot = 0):
     allong the way'''
 
     # detect number of cores
-    cores = multiprocessing.cpu_count()-1
+    cores = multiprocessing.cpu_count()/2
     if batch_size == "full":
         batch_size = dataset.labels_index.shape[0]
     dataloader = DataLoader(dataset, batch_size=batch_size,
-                            shuffle=True, num_workers=2)
+                            shuffle=True, num_workers=cores)
 
 
     def show_batch(sample_batched):
