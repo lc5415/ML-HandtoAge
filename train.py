@@ -58,14 +58,24 @@ def test(args, model, device, test_loader):
 def main():
     # Training settings
     parser = argparse.ArgumentParser(description='Hand-to-Age ML Project')
+
+    # nor does it takes this into account
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
+
+    ## my code does really take this into account
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
                         help='input batch size for testing (default: 1000)')
+
+    ## will likely need to change this
     parser.add_argument('--epochs', type=int, default=14, metavar='N',
                         help='number of epochs to train (default: 14)')
+
+    ## may need to do CV for this
     parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
                         help='learning rate (default: 1.0)')
+
+    ## may need to do CV for this
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
                         help='Learning rate step gamma (default: 0.7)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
@@ -75,6 +85,7 @@ def main():
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
 
+    ## may want to do this when submitting multi-node jobs for cross-val
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
     args = parser.parse_args()
@@ -89,12 +100,16 @@ def main():
 
     train_loader, test_loader = LoadImages.main()
 
+    # may need to change this, need to read on blocks and layers OR ask Arinbjorn
     net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=1)
     net = net.double()
     model = net.to(device)
 
+    # does the optimizer I use matter?
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
+
+    # what is this?
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, epoch)
