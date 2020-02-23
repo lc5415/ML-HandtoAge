@@ -149,7 +149,7 @@ def Load(dataset, batch_size = 20, plot = 0):
     allong the way'''
 
     # detect number of cores
-    cores = multiprocessing.cpu_count()/2
+    cores = int(np.ceil(multiprocessing.cpu_count()/2))
     if batch_size == "full":
         batch_size = dataset.labels_index.shape[0]
     dataloader = DataLoader(dataset, batch_size=batch_size,
@@ -180,44 +180,25 @@ def Load(dataset, batch_size = 20, plot = 0):
 
     return dataloader
 
-def main():
+def getData(image_directory, labels_directory, transform, plot = 0, batch_size = 20):
     # extract image names from shuffle of images I have obtained
     # training
-    training_labels_indices = map(lambda filename: filename.split('.')[0], os.listdir("labelled/train/"))
-    training_labels_indices = pd.DataFrame(list(training_labels_indices))
 
-    test_labels_indices = map(lambda filename: filename.split('.')[0], os.listdir("labelled/test/"))
-    test_labels_indices = pd.DataFrame(list(test_labels_indices))
+    labels_indices = map(lambda filename: filename.split('.')[0], os.listdir(image_directory))
+    labels_indices = pd.DataFrame(list(labels_indices))
 
-    data_labels = pd.read_csv("boneage-training-dataset.csv")
+    data_labels = pd.read_csv(labels_directory)
 
-    trainDS = HandDataset(training_labels_indices,
+    DATASET = HandDataset(labels_indices,
                           data_labels,
-                          "labelled/train/",
-                          transform=transforms.Compose(
-                              [Rescale(256),
-                               RandomCrop(224),
-                               ToTensor()
-                               ]))
+                          image_directory,
+                          transform= transform)
 
-    testDS = HandDataset(test_labels_indices,
-                         data_labels,
-                         "labelled/test/",
-                         transform=transforms.Compose(
-                             [Rescale(256),
-                              RandomCrop(224),
-                              ToTensor()
-                              ]))
-
-    plot = 0
     if plot != 0:
-        trainDS.plot_n_images()
-        trainDS.n_histograms()
+        DATASET.plot_n_images()
+        DATASET.n_histograms()
 
-    trainLoader = Load(trainDS)
-    testLoader = Load(testDS, batch_size= "full")
+    Loader = Load(DATASET, batch_size = batch_size)
 
-    return trainLoader, testLoader
+    return Loader
 
-if __name__ == '__main__':
-    main()

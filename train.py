@@ -5,7 +5,8 @@ import torch.nn.functional as F
 import argparse
 from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
-import LoadImages
+from LoadImages import getData
+from MyTransforms import Rescale, RandomCrop, ToTensor
 from MyResNet import ResNet, BasicBlock
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -59,11 +60,12 @@ def main():
     # Training settings
     parser = argparse.ArgumentParser(description='Hand-to-Age ML Project')
 
-    # nor does it takes this into account
+
+    ## my code does not really take this into account
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
 
-    ## my code does really take this into account
+    # nor does it takes this into account
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
                         help='input batch size for testing (default: 1000)')
 
@@ -97,7 +99,23 @@ def main():
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
-    train_loader, test_loader = LoadImages.main()
+    ### LOAD DATA
+    train_loader = getData("labelled/train/", "boneage-training-dataset.csv",
+                           transform = transforms.Compose(
+                              [Rescale(256),
+                               RandomCrop(224),
+                               ToTensor()
+                               ]),
+                           plot = 0, batch_size = 20)
+
+    test_loader = getData("labelled/test/", "boneage-training-dataset.csv",
+                           transform=transforms.Compose(
+                               [Rescale(256),
+                                RandomCrop(224),
+                                ToTensor()
+                                ]),
+                           plot=0, batch_size="full")
+
 
     # may need to change this, need to read on blocks and layers OR ask Arinbjorn
     net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=1)
