@@ -183,7 +183,7 @@ def Load(dataset, batch_size = 20, plot = 0):
 def getData(image_directory, labels_directory, transform, plot = 0, batch_size = 20):
     # extract image names from shuffle of images I have obtained
     # training
-
+    print(os.getcwd())
     labels_indices = map(lambda filename: filename.split('.')[0], os.listdir(image_directory))
     labels_indices = pd.DataFrame(list(labels_indices))
 
