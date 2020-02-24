@@ -98,7 +98,7 @@ def main():
     parser.add_argument('--log-interval', type=int, default=2, metavar='N',
                         help='how many batches to wait before logging training status')
     ## may want to do this when submitting multi-node jobs for cross-val
-    parser.add_argument('--save-model', action='store_true', default=True,
+    parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
     args = parser.parse_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()
@@ -111,7 +111,8 @@ def main():
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
     ### LOAD DATA
-    train_loader = getData("../labelled/train/", "../boneage-training-dataset.csv",
+    train_loader = getData("/rds/general/user/lc5415/home/ML-HtoA/labelled/train/",
+                           "/rds/general/user/lc5415/home/ML-HtoA/boneage-training-dataset.csv",
                            transform = transforms.Compose(
                               [Rescale(256),
                                RandomCrop(224),
@@ -119,7 +120,8 @@ def main():
                                ]),
                            plot = 0, batch_size = 16)
 
-    test_loader = getData("../labelled/test/", "../boneage-training-dataset.csv",
+    test_loader = getData("/rds/general/user/lc5415/home/ML-HtoA/labelled/test/", 
+                          "/rds/general/user/lc5415/home/ML-HtoA/boneage-training-dataset.csv",
                            transform=transforms.Compose(
                                [Rescale(256),
                                 RandomCrop(224),
@@ -132,6 +134,7 @@ def main():
                      (BasicBlock, [3, 4, 6, 3]),
                      (Bottleneck, [3, 4, 6, 3]),
                      (Bottleneck, [3, 4, 23, 3])]
+    
 
     # may need to change this, need to read on blocks and layers OR ask Arinbjorn
     net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=1)
@@ -163,5 +166,6 @@ def main():
 
 if __name__ == "__main__":
     global plotter
-    plotter = utils.VisdomLinePlotter(env_name = 'Training curves')
+    port = 8686
+    plotter = utils.VisdomLinePlotter(port = port, env_name = 'Training curves')
     main()
