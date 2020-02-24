@@ -29,6 +29,10 @@ def train(args, model, device, train_loader, optimizer, epoch):
 
         loss.backward()
         optimizer.step()
+        
+        # the train epoch message will only be printed when the batch_id module the log_interval
+        # argument is equal to 0 (log interval = 10). If the number of batches is lower than 10, 
+        # it will never print anything
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * train_loader.batch_sampler.batch_size,
@@ -70,7 +74,7 @@ def main():
                         help='input batch size for testing (default: 1000)')
 
     ## will likely need to change this
-    parser.add_argument('--epochs', type=int, default=100, metavar='N',
+    parser.add_argument('--epochs', type=int, default=20, metavar='N',
                         help='number of epochs to train (default: 14)')
 
     ## may need to do CV for this
