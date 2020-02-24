@@ -7,10 +7,13 @@ from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
 from LoadImages import getData
 from MyTransforms import Rescale, RandomCrop, ToTensor
-from MyResNet import ResNet, BasicBlock
+from MyResNet import ResNet, BasicBlock, Bottleneck
+import utils
+import numpy as np
 
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
+    train_loss = 0
     for batch_idx, batch in enumerate(train_loader):
         # get the inputs in correct format and pass them onto CPU/GPU
         data, target = batch['image'].to(device), batch['age'].to(device)
@@ -26,7 +29,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
         # -- loss = F.nll_loss(output, target)
         ## to
         loss = F.mse_loss(output, target)
-
+        train_loss += torch.sum(loss)
         loss.backward()
         optimizer.step()
         
@@ -37,6 +40,8 @@ def train(args, model, device, train_loader, optimizer, epoch):
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * train_loader.batch_sampler.batch_size,
                 len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.item()))
+
+    return train_loss/len(train_loader)
 
 
 def test(args, model, device, test_loader):
@@ -58,6 +63,8 @@ def test(args, model, device, test_loader):
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
+
+    return test_loss
 
 
 def main():
@@ -88,7 +95,7 @@ def main():
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
-    parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+    parser.add_argument('--log-interval', type=int, default=8, metavar='N',
                         help='how many batches to wait before logging training status')
     ## may want to do this when submitting multi-node jobs for cross-val
     parser.add_argument('--save-model', action='store_true', default=True,
@@ -110,7 +117,7 @@ def main():
                                RandomCrop(224),
                                ToTensor()
                                ]),
-                           plot = 0, batch_size = 20)
+                           plot = 0, batch_size = 16)
 
     test_loader = getData("labelled/test/", "boneage-training-dataset.csv",
                            transform=transforms.Compose(
@@ -120,6 +127,11 @@ def main():
                                 ]),
                            plot=0, batch_size="full")
 
+
+    architectures = [(BasicBlock, [2, 2, 2, 2]),
+                     (BasicBlock, [3, 4, 6, 3]),
+                     (Bottleneck, [3, 4, 6, 3]),
+                     (Bottleneck, [3, 4, 23, 3])]
 
     # may need to change this, need to read on blocks and layers OR ask Arinbjorn
     net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=1)
@@ -133,8 +145,16 @@ def main():
     # what is this?
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
-        train(args, model, device, train_loader, optimizer, epoch)
-        test(args, model, device, test_loader)
+        train_loss = train(args, model, device, train_loader, optimizer, epoch)
+        test_loss = test(args, model, device, test_loader)
+
+        # plot loss to visdom object
+        plotter.plot('loss', 'train', 'Class Loss', epoch, np.array(torch.mean(train_loss)))
+
+        # plot loss to visdom object
+        plotter.plot('loss', 'test', 'Class Loss', epoch, np.array(torch.mean(test_loss)))
+
+
         scheduler.step()
 
     if args.save_model:
@@ -142,4 +162,6 @@ def main():
 
 
 if __name__ == "__main__":
+    global plotter
+    plotter = utils.VisdomLinePlotter(env_name = 'Training curves')
     main()
