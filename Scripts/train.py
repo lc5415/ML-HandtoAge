@@ -41,7 +41,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
                 epoch, batch_idx * train_loader.batch_sampler.batch_size,
                 len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.item()))
 
-    return train_loss/len(train_loader.dataset)
+    return train_loss/len(train_loader)
 
 
 def test(args, model, device, test_loader):
@@ -111,8 +111,8 @@ def main():
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
     ### LOAD DATA
-    train_loader = getData("labelled/train/",
-                           "boneage-training-dataset.csv",
+    train_loader = getData("/rds/general/user/lc5415/home/ML-HtoA/labelled/train/",
+                           "/rds/general/user/lc5415/home/ML-HtoA/boneage-training-dataset.csv",
                            transform = transforms.Compose(
                               [Rescale(256),
                                RandomCrop(224),
@@ -120,8 +120,8 @@ def main():
                                ]),
                            plot = 0, batch_size = 16)
 
-    test_loader = getData("labelled/test/",
-                          "boneage-training-dataset.csv",
+    test_loader = getData("/rds/general/user/lc5415/home/ML-HtoA/labelled/test/", 
+                          "/rds/general/user/lc5415/home/ML-HtoA/boneage-training-dataset.csv",
                            transform=transforms.Compose(
                                [Rescale(256),
                                 RandomCrop(224),
@@ -152,10 +152,10 @@ def main():
         test_loss = test(args, model, device, test_loader)
 
         # plot loss to visdom object
-        plotter.plot('loss', 'train', 'Class Loss', epoch, train_loss.detach().numpy())
+        plotter.plot('loss', 'train', 'Class Loss', epoch, np.array(torch.mean(train_loss.cpu())) if use_cuda else np.array(torch.mean(train_loss)))
 
         # plot loss to visdom object
-        plotter.plot('loss', 'test', 'Class Loss', epoch, test_loss)
+        plotter.plot('loss', 'test', 'Class Loss', epoch, np.array(torch.mean(test_loss)))
 
 
         scheduler.step()
