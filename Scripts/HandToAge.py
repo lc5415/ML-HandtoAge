@@ -19,8 +19,8 @@ test_labels_indices = map(lambda filename: filename.split('.')[0], os.listdir("t
 test_labels_indices = list(test_labels_indices)
 
 # read in labels csv file
-training_labels = pd.read_csv("boneage-training-dataset.csv")
-test_labels = pd.read_csv("boneage-test-dataset.csv")
+training_labels = pd.read_csv("../boneage-training-dataset.csv")
+test_labels = pd.read_csv("../boneage-test-dataset.csv")
 
 # only keep entries where image is present
 training_labels = training_labels.loc[training_labels["id"].isin(training_labels_indices)]

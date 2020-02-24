@@ -111,7 +111,7 @@ def main():
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
     ### LOAD DATA
-    train_loader = getData("labelled/train/", "boneage-training-dataset.csv",
+    train_loader = getData("../labelled/train/", "../boneage-training-dataset.csv",
                            transform = transforms.Compose(
                               [Rescale(256),
                                RandomCrop(224),
@@ -119,7 +119,7 @@ def main():
                                ]),
                            plot = 0, batch_size = 16)
 
-    test_loader = getData("labelled/test/", "boneage-training-dataset.csv",
+    test_loader = getData("../labelled/test/", "../boneage-training-dataset.csv",
                            transform=transforms.Compose(
                                [Rescale(256),
                                 RandomCrop(224),
