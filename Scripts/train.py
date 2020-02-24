@@ -8,7 +8,7 @@ from torchvision import datasets, transforms # maybe will use this in the future
 from LoadImages import getData
 from MyTransforms import Rescale, RandomCrop, ToTensor
 from MyResNet import ResNet, BasicBlock, Bottleneck
-import utils
+import visdom
 import numpy as np
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -152,11 +152,12 @@ def main():
         test_loss = test(args, model, device, test_loader)
 
         # plot loss to visdom object
-        plotter.plot('loss', 'train', 'Class Loss', epoch, train_loss.cpu().detach().numpy() if use_cuda else train_loss.detach().numpy())
+        viz.line(X = epoch, Y = train_loss.cpu().detach().numpy() if use_cuda else train_loss.detach().numpy(),
+                 win="Train", update = "append")
 
         # plot loss to visdom object
-        plotter.plot('loss', 'test', 'Class Loss', epoch, test_loss)
-
+        viz.line(X=epoch, Y=test_loss,
+                 win="Test", update="append")
 
         scheduler.step()
 
@@ -165,7 +166,5 @@ def main():
 
 
 if __name__ == "__main__":
-    global plotter
-    port = 8686
-    plotter = utils.VisdomLinePlotter(port = port, env_name = 'Training curves')
+    viz = visdom.Visdom(port = 8686)
     main()
