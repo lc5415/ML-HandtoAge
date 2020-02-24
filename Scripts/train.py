@@ -95,7 +95,7 @@ def main():
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
-    parser.add_argument('--log-interval', type=int, default=8, metavar='N',
+    parser.add_argument('--log-interval', type=int, default=2, metavar='N',
                         help='how many batches to wait before logging training status')
     ## may want to do this when submitting multi-node jobs for cross-val
     parser.add_argument('--save-model', action='store_true', default=True,
