@@ -150,14 +150,18 @@ def main():
     for epoch in range(1, args.epochs + 1):
         train_loss = train(args, model, device, train_loader, optimizer, epoch)
         test_loss = test(args, model, device, test_loader)
+        
+        # plot loss to visdom object
+        viz.line(X = np.array([epoch]),
+                 Y = np.array([train_loss.cpu().detach().numpy() if use_cuda else train_loss.detach().numpy()]),
+                 win="Train", update = "append",
+                 opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
 
         # plot loss to visdom object
-        viz.line(X = epoch, Y = train_loss.cpu().detach().numpy() if use_cuda else train_loss.detach().numpy(),
-                 win="Train", update = "append")
-
-        # plot loss to visdom object
-        viz.line(X=epoch, Y=test_loss,
-                 win="Test", update="append")
+        viz.line(X=np.array([epoch]),
+                 Y=np.array([test_loss]),
+                 win="Test", update="append",
+                opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
 
         scheduler.step()
 
