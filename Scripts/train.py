@@ -28,8 +28,10 @@ def train(args, model, device, train_loader, optimizer, epoch):
         ## change code below from -- we don't wanna be using NLL loss for regression
         # -- loss = F.nll_loss(output, target)
         ## to
+        # the line below calculates average loss over batch
         loss = F.mse_loss(output, target)
-        train_loss += torch.sum(loss)
+        # we add up the SSE here
+        train_loss += F.mse_loss(output, target, reduction = "sum").item() # same as for test set
         loss.backward()
         optimizer.step()
         
@@ -41,6 +43,10 @@ def train(args, model, device, train_loader, optimizer, epoch):
                 epoch, batch_idx * train_loader.batch_sampler.batch_size,
                 len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.item()))
 
+        #we return the averaged train loss over all the batches over all the samples, this is actually 
+        # like the mean. train loss is SSE, the thing we are dividing by is N.
+        
+        # we would prefer to output RMSE to have everything on same scale
     return train_loss/len(train_loader.dataset)
 
 
@@ -49,15 +55,20 @@ def test(args, model, device, test_loader):
     test_loss = 0
     correct = 0
     with torch.no_grad():
+        # model evaulation is only performed in one batch 
         for batch in test_loader:
             data, target = batch['image'].to(device), batch['age'].to(device)
             data = data.double()
             target = target.double()
             output = model(data)
+            # this format of mse loss compute the SSE instead of the MSE
             test_loss += F.mse_loss(output, target, reduction='sum').item()  # sum up batch loss
-            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-            correct += pred.eq(target.view_as(pred)).sum().item()
-
+            
+            # ---- This is for classification
+            #pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+            #correct += pred.eq(target.view_as(pred)).sum().item()
+    
+    # this now computes the MSE
     test_loss /= len(test_loader.dataset)
 
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
@@ -73,7 +84,7 @@ def main():
 
 
     ## my code does not really take this into account
-    parser.add_argument('--batch-size', type=int, default=64, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=16, metavar='N',
                         help='input batch size for training (default: 64)')
 
     # nor does it takes this into account
@@ -118,7 +129,7 @@ def main():
                                RandomCrop(224),
                                ToTensor()
                                ]),
-                           plot = 0, batch_size = 16)
+                           plot = 0, batch_size = args.batch_size)
 
     test_loader = getData("labelled/test/",
                           "boneage-training-dataset.csv",
