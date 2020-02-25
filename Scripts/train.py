@@ -164,7 +164,7 @@ def main():
         
         # plot loss to visdom object
         viz.line(X = np.array([epoch]),
-                 Y = np.array([train_loss.cpu().detach().numpy() if use_cuda else train_loss.detach().numpy()]),
+                 Y = np.array([train_loss.cpu().detach().numpy() if use_cuda else train_loss]),
                  win="Train", update = "append",
                  opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
 
@@ -181,5 +181,5 @@ def main():
 
 
 if __name__ == "__main__":
-    viz = visdom.Visdom(port = 8686)
+    viz = visdom.Visdom(port = 8097)
     main()
