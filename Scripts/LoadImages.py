@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import multiprocessing
 import torchvision.utils as utils
-from MyTransforms import Rescale, RandomCrop, ToTensor
+from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
 from torchvision.transforms import Normalize
 from torch.nn.modules.normalization import GroupNorm
 plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
@@ -17,7 +17,7 @@ plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
 class HandDataset(Dataset):
     """Hand labels dataset."""
 
-    def __init__(self, pandas_df, data_labels, root_dir, transform=None):
+    def __init__(self, pandas_df, data_labels, root_dir, transform=None, normalise = True):
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -25,46 +25,86 @@ class HandDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a image.
         """
+
+        # pass dataframe containing all image labels (i.e. ids, e.g 1876,1746...)
+        # of the images to be included in this loader
         self.labels_index = pandas_df  # pd.read_csv(csv_file)
+        # pass data frame containing "target" i.e outcome/label for each image id
         self.labels_frame = data_labels
+        # pass path of directory where images are locate
         self.root_dir = root_dir
+        # pass whatever transform you'd like to apply to the data
         self.transform = transform
+        self.normalise = normalise
 
     def __len__(self):
+        # return number of indices in this dataset (aka, number of images in whole dataset)
         return len(self.labels_index)
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
+        # get image ids
         image_id = self.labels_index.iloc[idx, 0]
+        # make image path by preceding the image id by the root directory and
+        # by appending .png after it
         img_name = os.path.join(self.root_dir,
                                 image_id + ".png")
+        # read image
         image = io.imread(img_name)
+        # reshape image to [HxWx1]
         image = image.reshape((image.shape[0], image.shape[1], 1))
 
-        ## get label along with image
+        ## get label along with image and make it into an array
         age = self.labels_frame.loc[self.labels_frame.id == int(image_id), 'boneage']
         age = np.array(age)
-        sample = {'image': image, 'age': age}
+
+        #get sex as well. coded as male (1: male, 0: female)
+        sex = self.labels_frame.loc[self.labels_frame.id == int(image_id), 'male']
+        sex = np.array(sex)
+
+        # put image and its labels in a sample dictionary
+        sample = {'image': image, 'age': age, 'sex': sex}
 
         if self.transform:
+            # transform with transform that was given to the function
             sample = self.transform(sample)
+        if self.normalise:
+            """IN is hard coded at the moment which may not be ideal """
             # Instance Normalization
             image = sample['image']
             mean, std = torch.mean(image), torch.std(image)
             image = (image - mean) / std
 
-        sample = {'image': image, 'age': age}
+        # return transformed image
+        sample = {'image': image, 'age': age, 'sex': sex}
 
         return sample
 
     def plot_img(self, idx):
 
+        """If transforms has been applied this will plot the transformed images"""
+
+        # get sample with given id and retrieve the image from there
         img = self.__getitem__(idx)['image']
 
+        # If a transform was applied reorder the image so that it can be plotted
         if self.transform:
             img = np.transpose(img, (1, 2, 0))
+        # reshape image to  be HxW only,
+        # explanation
+        """matplotlib.pyplot does not like 2D tensors for grayscale images, if an
+         image is grayscale plt likes it to be a simple matrix of dims HxW, for 
+         RGB images it takes HxWxC images but grayscale images are not just HxWx1
+         
+         randimg = np.random.rand(256,256,3) # random RGB images
+         --> no problem
+         randimg  = np.random.rand(256,256) # grayscale image
+         --> no problem
+         randimg = np.random.rand(256,256,1) # grasycale img as 1D tensor
+         --> error
+         """
         img = img.reshape((img.shape[0], img.shape[1]))
         plt.imshow(img)
         plt.show()
@@ -73,6 +113,8 @@ class HandDataset(Dataset):
         """
         This image will give you a matplotlib subplot of n images
         from a torch Dataset, given a bunch of indices
+
+        Note: these will be transformed images if a transformation has been applied
         """
 
         # set seed to get same images this function is called
@@ -104,6 +146,8 @@ class HandDataset(Dataset):
         """
         This image will give you a matplotlib subplot of n images
         from a torch Dataset, given a bunch of indices
+
+        Note: plots transformed images
         """
 
         # set seed to get same images this function is called
@@ -146,15 +190,18 @@ class HandDataset(Dataset):
 def Load(dataset, batch_size = 20, plot = 0):
     '''Given an object of the class torch.utils.data.Dataset this function
     returns a dataloader with the given images and the given labels and plots some stuff
-    allong the way'''
+    allong the way
 
-    # detect number of cores
+    '''
+
+    # detect number of cores, halve it and ceil it
     cores = int(np.ceil(multiprocessing.cpu_count()/2))
+
     if batch_size == "full":
         batch_size = dataset.labels_index.shape[0]
+
     dataloader = DataLoader(dataset, batch_size=batch_size,
                             shuffle=True, num_workers=cores)
-
 
     def show_batch(sample_batched):
         """Show image with landmarks for a batch of samples."""
@@ -180,7 +227,28 @@ def Load(dataset, batch_size = 20, plot = 0):
 
     return dataloader
 
-def getData(image_directory, labels_directory, transform, plot = 0, batch_size = 20):
+def getData(image_directory, labels_directory, transform = None,
+            normalise = True, plot = 0, batch_size = 20, save = 0):
+    """Example: --getting all the data
+    dataload = LoadImages.getData("labelled/train/",
+...                           "boneage-training-dataset.csv",
+...                           transform = transforms.Compose(
+...                              [Rescale(256),
+...                               RandomCrop(224),
+...                               ToTensor()
+...                               ]), batch_size = "full")
+
+    --- getting mean and std values for whole batch:
+    dataload = LoadImages.getData("labelled/train",
+                                "boneage-training-dataset.csv",
+                                transform = transforms.Compose(
+                             [Rescale(256),
+                               RandomCrop(224),
+                              ToTensor()
+                              ]), batch_size = "full", normalise = False)
+
+    for id, batch in enumerate(data): print(batch['image'].mean(), batch['image'].std())
+    """
     # extract image names from shuffle of images I have obtained
     # training
 
@@ -192,13 +260,16 @@ def getData(image_directory, labels_directory, transform, plot = 0, batch_size =
     DATASET = HandDataset(labels_indices,
                           data_labels,
                           image_directory,
-                          transform= transform)
+                          transform= transform, normalise = normalise)
 
     if plot != 0:
         DATASET.plot_n_images()
         DATASET.n_histograms()
 
     Loader = Load(DATASET, batch_size = batch_size)
+
+    if save:
+        torch.save(Loader, os.getcwd()+"/labelled/trainDataLoaded.pt")
 
     return Loader
 

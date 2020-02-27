@@ -33,7 +33,7 @@ class Rescale(object):
 
         resized_img = transform.resize(image, (new_h, new_w))
 
-        return {'image': resized_img, 'age': sample['age']}
+        return {'image': resized_img, 'age': sample['age'], 'sex': sample['sex']}
 
 
 class RandomCrop(object):
@@ -69,7 +69,7 @@ class RandomCrop(object):
         image = image[top: top + new_h,
                 left: left + new_w]
 
-        return {'image': image, 'age': sample['age']}
+        return {'image': image, 'age': sample['age'], 'sex': sample['sex']}
 
 
 class ToTensor(object):
@@ -82,5 +82,6 @@ class ToTensor(object):
         image = sample['image']
         image = image.transpose((2, 0, 1))
         return {'image': torch.from_numpy(image),
-                'age': torch.from_numpy(sample['age'])}
+                'age': torch.from_numpy(sample['age']),
+                'sex': torch.from_numpy(sample['sex'])}
 

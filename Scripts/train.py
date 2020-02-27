@@ -5,9 +5,9 @@ import torch.nn.functional as F
 import argparse
 from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
-from LoadImages import getData
-from MyTransforms import Rescale, RandomCrop, ToTensor
-from MyResNet import ResNet, BasicBlock, Bottleneck
+from Scripts.LoadImages import getData
+from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
+from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
 import visdom
 import numpy as np
 import pandas as pd
@@ -53,7 +53,6 @@ def train(args, model, device, train_loader, optimizer, epoch):
         # we would prefer to output RMSE to have everything on same scale
     return train_loss/len(train_loader.dataset)
 
-
 def test(args, model, device, test_loader):
     model.eval()
     test_loss = 0
@@ -83,7 +82,6 @@ def test(args, model, device, test_loader):
         100. * correct / len(test_loader.dataset)))
 
     return test_loss
-
 
 def main():
     # Training settings
@@ -190,7 +188,6 @@ def main():
         torch.save(model.state_dict(), "HtoA.pt")
 
     Loss_monitor.to_csv("Results/Lossframe.csv")
-
 
 if __name__ == "__main__":
     viz = visdom.Visdom(port = 8097)

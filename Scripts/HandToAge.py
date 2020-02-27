@@ -69,9 +69,33 @@ for filename in training_labels['id'].values:
     i +=1
 
 plt.scatter(image_size[:, 0], image_size[:, 1])
-plt.title("Varying image size across dataset")
+plt.set_title("Varying image size across dataset")
 plt.xlabel("'Row' pixels")
 plt.ylabel("'Column' pixels")
 plt.show()
 
+from skimage.io import imread
 
+
+img = imread("labelled/train/1468.png")
+
+img_centered = img-img.mean()
+img_normalised = (img-img.mean())/img.std()
+
+fig, axs = plt.subplots(3, sharex=True)
+axs[0].hist(img.flatten(), bins = 256)
+axs[0].set_title('original')
+axs[1].hist(img_centered.flatten(), bins = 256)
+axs[1].set_title('Centered')
+axs[2].hist(img_normalised.flatten(), bins = 256)
+axs[2].set_title('Centered+Scaled')
+plt.show()
+
+fig, axs = plt.subplots(1, 3)
+axs[0].imshow(img)
+axs[0].set_title('original')
+axs[1].imshow(img_centered)
+axs[1].set_title('Centered')
+axs[2].imshow(img_normalised)
+axs[2].set_title('Centered+Scaled')
+plt.show()
