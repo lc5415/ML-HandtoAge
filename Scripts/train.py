@@ -10,6 +10,7 @@ from MyTransforms import Rescale, RandomCrop, ToTensor
 from MyResNet import ResNet, BasicBlock, Bottleneck
 import visdom
 import numpy as np
+import pandas as pd
 
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
@@ -29,9 +30,12 @@ def train(args, model, device, train_loader, optimizer, epoch):
         # -- loss = F.nll_loss(output, target)
         ## to
         # the line below calculates average loss over batch
-        loss = F.mse_loss(output, target)
+        # loss = F.mse_loss(output, target)
+
+        # MAE instead of mse per batch
+        loss = F.l1_loss(output, target)
         # we add up the SSE here
-        train_loss += F.mse_loss(output, target, reduction = "sum").item() # same as for test set
+        train_loss += F.l1_loss(output, target, reduction = "sum").item() # same as for test set
         loss.backward()
         optimizer.step()
         
@@ -62,8 +66,11 @@ def test(args, model, device, test_loader):
             target = target.double()
             output = model(data)
             # this format of mse loss compute the SSE instead of the MSE
-            test_loss += F.mse_loss(output, target, reduction='sum').item()  # sum up batch loss
-            
+            #test_loss += F.mse_loss(output, target, reduction='sum').item()  # sum up batch loss
+
+            # Computing l1 loss instead of mse to have loss value in relevant units
+            test_loss += F.l1_loss(output, target, reduction='sum').item()  # sum up batch loss
+
             # ---- This is for classification
             #pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
             #correct += pred.eq(target.view_as(pred)).sum().item()
@@ -129,7 +136,7 @@ def main():
                                RandomCrop(224),
                                ToTensor()
                                ]),
-                           plot = 0, batch_size = args.batch_size)
+                           plot = 1, batch_size = args.batch_size)
 
     test_loader = getData("labelled/test/",
                           "boneage-training-dataset.csv",
@@ -138,7 +145,7 @@ def main():
                                 RandomCrop(224),
                                 ToTensor()
                                 ]),
-                           plot=0, batch_size="full")
+                           plot=1, batch_size="full")
 
 
     architectures = [(BasicBlock, [2, 2, 2, 2]),
@@ -158,6 +165,9 @@ def main():
 
     # what is this?
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
+
+    Loss_monitor = pd.DataFrame(columns=["Train loss", "Test loss"])
+
     for epoch in range(1, args.epochs + 1):
         train_loss = train(args, model, device, train_loader, optimizer, epoch)
         test_loss = test(args, model, device, test_loader)
@@ -173,11 +183,13 @@ def main():
                  Y=np.array([test_loss]),
                  win="Test", update="append",
                 opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
-
+        Loss_monitor = Loss_monitor.append([train_loss, test_loss])
         scheduler.step()
 
     if args.save_model:
         torch.save(model.state_dict(), "HtoA.pt")
+
+    Loss_monitor.to_csv("Results/Lossframe.csv")
 
 
 if __name__ == "__main__":
