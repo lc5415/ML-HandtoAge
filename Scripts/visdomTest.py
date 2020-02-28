@@ -1,9 +1,14 @@
 # visdom remote tryout
-
+# PROBLEM IS: by submitting a job to set the visdom.sever, i don't know where that is running hence I lose that information 
 import visdom
 import numpy as np
+import sys
 
-viz = vidsom.Visdom()
+port_in = int(sys.argv[1])
+
+print(port_in)
+
+viz = visdom.Visdom(port = port_in)
 
 textwindow = viz.text('Hello World!')
 

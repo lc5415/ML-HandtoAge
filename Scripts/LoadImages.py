@@ -204,7 +204,7 @@ def Load(dataset, batch_size = 20, plot = 0):
         batch_size = dataset.labels_index.shape[0]
 
     dataloader = DataLoader(dataset, batch_size=batch_size,
-                            shuffle=True, num_workers=cores)
+                            shuffle=True, num_workers=cores, drop_last = True)
 
     def show_batch(sample_batched):
         """Show image with landmarks for a batch of samples."""
@@ -232,7 +232,7 @@ def Load(dataset, batch_size = 20, plot = 0):
     return dataloader
 
 def getData(image_directory, labels_directory, transform = None,
-            normalise = True, plot = 0, batch_size = 20, save = 0):
+            normalise = True, plot = 0, batch_size = 20, save = 0, savename = ""):
     """Example: --getting all the data
     dataload = LoadImages.getData("labelled/train/",
 ...                           "boneage-training-dataset.csv",
@@ -275,7 +275,7 @@ def getData(image_directory, labels_directory, transform = None,
     Loader = Load(DATASET, batch_size = batch_size, plot = plot)
 
     if save:
-        torch.save(Loader, os.getcwd()+"/labelled/trainDataLoaded.pt")
+        torch.save(Loader, os.getcwd()+"/labelled/"+savename)
 
     return Loader
 
