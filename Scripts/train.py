@@ -12,6 +12,8 @@ import visdom
 import numpy as np
 import pandas as pd
 
+import sys # to take args from bash script
+
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
     train_loss = 0
@@ -126,24 +128,30 @@ def main():
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
-    ### LOAD DATA
-    train_loader = getData("labelled/train/",
-                           "boneage-training-dataset.csv",
-                           transform = transforms.Compose(
-                              [Rescale(256),
-                               RandomCrop(224),
-                               ToTensor()
-                               ]),
-                           plot = 1, batch_size = args.batch_size)
+    ### LOAD DATA -- on the fly
+#     train_loader = getData("labelled/train/",
+#                            "boneage-training-dataset.csv",
+#                            transform = transforms.Compose(
+#                               [Rescale(256),
+#                                RandomCrop(224),
+#                                ToTensor()
+#                                ]),
+#                            plot = 1, batch_size = args.batch_size)
 
-    test_loader = getData("labelled/test/",
-                          "boneage-training-dataset.csv",
-                           transform=transforms.Compose(
-                               [Rescale(256),
-                                RandomCrop(224),
-                                ToTensor()
-                                ]),
-                           plot=1, batch_size="full")
+#     test_loader = getData("labelled/test/",
+#                           "boneage-training-dataset.csv",
+#                            transform=transforms.Compose(
+#                                [Rescale(256),
+#                                 RandomCrop(224),
+#                                 ToTensor()
+#                                 ]),
+#                            plot=1, batch_size="full")
+    
+    
+    # loading premade dataloaders
+    # trainloader has a batch size of 128 and testLoader has full size (2611 images)
+    train_loader = torch.load("FULLdata/trainLoaded.pt")
+    test_loader = torch.load("FULLdata/testLoaded.pt")
 
 
     architectures = [(BasicBlock, [2, 2, 2, 2]),
@@ -151,9 +159,10 @@ def main():
                      (Bottleneck, [3, 4, 6, 3]),
                      (Bottleneck, [3, 4, 23, 3])]
     
-
-    # may need to change this, need to read on blocks and layers OR ask Arinbjorn
-    net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=1)
+    arch_choice = sys.argv[1]
+    chosenArch = architectures[arch_choice]
+    # set architecture from bash script call
+    net = ResNet(chosenArch[0], chosenArch[1], num_classes=1)
     net = net.double()
     model = net.to(device)
 
@@ -161,7 +170,7 @@ def main():
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
 
-    # what is this?
+    # change this to multistep after initial training
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
 
     Loss_monitor = pd.DataFrame(columns=["Train loss", "Test loss"])
@@ -170,17 +179,20 @@ def main():
         train_loss = train(args, model, device, train_loader, optimizer, epoch)
         test_loss = test(args, model, device, test_loader)
         
-        # plot loss to visdom object
-        viz.line(X = np.array([epoch]),
-                 Y = np.array([train_loss.cpu().detach().numpy() if use_cuda else train_loss]),
-                 win="Train", update = "append",
-                 opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
+        
+        ######### WE ARE NOT USING VISDOM FOR NOW
+#         # plot loss to visdom object
+#         viz.line(X = np.array([epoch]),
+#                  Y = np.array([train_loss.cpu().detach().numpy() if use_cuda else train_loss]),
+#                  win="Train", update = "append",
+#                  opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
 
-        # plot loss to visdom object
-        viz.line(X=np.array([epoch]),
-                 Y=np.array([test_loss]),
-                 win="Test", update="append",
-                opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
+#         # plot loss to visdom object
+#         viz.line(X=np.array([epoch]),
+#                  Y=np.array([test_loss]),
+#                  win="Test", update="append",
+#                 opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
+        
         Loss_monitor = Loss_monitor.append([train_loss, test_loss])
         scheduler.step()
 
@@ -190,5 +202,6 @@ def main():
     Loss_monitor.to_csv("Results/Lossframe.csv")
 
 if __name__ == "__main__":
-    viz = visdom.Visdom(port = 8097)
+    # NOT USING VISDOM FOR NOW
+    # viz = visdom.Visdom(port = 8097)
     main()
