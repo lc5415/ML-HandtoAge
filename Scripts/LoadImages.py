@@ -69,8 +69,6 @@ class HandDataset(Dataset):
         if self.transform:
             # transform with transform that was given to the function
             sample = self.transform(sample)
-            # return transformed image
-            sample = {'image': image, 'age': age, 'sex': sex}
         if self.normalise:
             """IN is hard coded at the moment which may not be ideal """
             # Instance Normalization
@@ -138,7 +136,8 @@ class HandDataset(Dataset):
             ax = plt.subplot(4, 5, k + 1)
             plt.imshow(img)
             plt.tight_layout()
-            ax.set_title(f'{img_id}')
+            # set title as age
+            ax.set_title(f"{np.array(sample['age'])/12}")
 
         if img.shape[0] == img.shape[1]:
             all_axes = fig.get_axes()
@@ -211,7 +210,7 @@ def Load(dataset, batch_size = 20, plot = 0):
         """Show image with landmarks for a batch of samples."""
         images_batch = sample_batched['image']
 
-        grid = utils.make_grid(images_batch, nrow=5)
+        grid = utils.make_grid(images_batch, nrow= int(np.ceil(np.sqrt(images_batch.shape[0]))) )
         plt.imshow(grid.numpy().transpose((1, 2, 0)))
         plt.show()
 
@@ -222,7 +221,7 @@ def Load(dataset, batch_size = 20, plot = 0):
               sample_batched['sex'].size())
 
         # observe 4th batch and stop.
-        if i_batch == 3 and plot != 0: # dataloader.batch_size - 1:
+        if i_batch == len(dataloader)-1 and plot != 0: # dataloader.batch_size - 1:
             plt.figure()
             show_batch(sample_batched)
             plt.axis('off')
@@ -297,12 +296,13 @@ def FullBatchStats(dataloaded):
 
     return b_mean, b_std
 
-if __name__ == "__main__":
-    data = getData("labelled/train",
-                          "boneage-training-dataset.csv",
-                          transform=transforms.Compose(
-                                  [Rescale(256),
-                                   RandomCrop(224),
-                                   ToTensor()
-                                   ]), batch_size="full", normalise=False,
-                   plot = 1)
+
+# SAMPLE CODE
+# if __name__ == "__main__":
+#     data = getData("labelled/train",
+#                           "boneage-training-dataset.csv",
+#                           transform=transforms.Compose(
+#                                   [Rescale(256),
+#                                    RandomCrop(224),
+#                                    ToTensor()
+#                                    ]), batch_size="full", normalise=True, plot = 1)
