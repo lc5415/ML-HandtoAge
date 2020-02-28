@@ -10,7 +10,6 @@ import multiprocessing
 import torchvision.utils as utils
 from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
 from torchvision.transforms import Normalize
-from torch.nn.modules.normalization import GroupNorm
 plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
 
 
@@ -70,15 +69,18 @@ class HandDataset(Dataset):
         if self.transform:
             # transform with transform that was given to the function
             sample = self.transform(sample)
+            # return transformed image
+            sample = {'image': image, 'age': age, 'sex': sex}
         if self.normalise:
             """IN is hard coded at the moment which may not be ideal """
             # Instance Normalization
             image = sample['image']
             mean, std = torch.mean(image), torch.std(image)
             image = (image - mean) / std
+            # return transformed image
+            sample = {'image': image, 'age': age, 'sex': sex}
 
-        # return transformed image
-        sample = {'image': image, 'age': age, 'sex': sex}
+
 
         return sample
 
@@ -123,7 +125,9 @@ class HandDataset(Dataset):
         for k, img_id in enumerate(np.random.randint(0,
                                                      len(self.labels_index),
                                                      n_images)):
-            img = self.__getitem__(img_id)['image']
+
+            sample = self.__getitem__(img_id)
+            img = sample['image']
 
             # standard input size is [1,224,224] when transformed, as this is torch preferred
             # input format, line below is transposing to [224,224,1]
@@ -214,7 +218,8 @@ def Load(dataset, batch_size = 20, plot = 0):
     for i_batch, sample_batched in enumerate(dataloader):
 
         print(i_batch, sample_batched['image'].size(),
-              sample_batched['age'].size())
+              sample_batched['age'].size(),
+              sample_batched['sex'].size())
 
         # observe 4th batch and stop.
         if i_batch == 3 and plot != 0: # dataloader.batch_size - 1:
@@ -248,6 +253,8 @@ def getData(image_directory, labels_directory, transform = None,
                               ]), batch_size = "full", normalise = False)
 
     for id, batch in enumerate(data): print(batch['image'].mean(), batch['image'].std())
+
+    You can also call FullBatchStatistics
     """
     # extract image names from shuffle of images I have obtained
     # training
@@ -266,10 +273,36 @@ def getData(image_directory, labels_directory, transform = None,
         DATASET.plot_n_images()
         DATASET.n_histograms()
 
-    Loader = Load(DATASET, batch_size = batch_size)
+    Loader = Load(DATASET, batch_size = batch_size, plot = plot)
 
     if save:
         torch.save(Loader, os.getcwd()+"/labelled/trainDataLoaded.pt")
 
     return Loader
 
+def FullBatchStats(dataloaded):
+    """This function expects an object of class torch.utils.data.DataLoader and
+    will return the dataloader statistics (mean and std)"""
+
+    if len(dataloaded) == 1:
+        for id, batch in enumerate(dataloaded):
+            b_mean, b_std = batch['image'].mean(), batch['image'].std()
+
+    else:
+        b_all = []
+        for id, batch in enumerate(dataloaded):
+            b_all.append(batch['image'].flatten())
+        b_mean = b_all.mean()
+        b_std = b_all.std()
+
+    return b_mean, b_std
+
+if __name__ == "__main__":
+    data = getData("labelled/train",
+                          "boneage-training-dataset.csv",
+                          transform=transforms.Compose(
+                                  [Rescale(256),
+                                   RandomCrop(224),
+                                   ToTensor()
+                                   ]), batch_size="full", normalise=False,
+                   plot = 1)
