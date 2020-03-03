@@ -10,7 +10,7 @@ try:
     from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
     from Scripts.LoadImages import getData
     from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
-except ImportError:
+except ModuleNotFoundError:
     from MyResNet import ResNet, BasicBlock, Bottleneck
     from LoadImages import getData
     from MyTransforms import Rescale, RandomCrop, ToTensor
