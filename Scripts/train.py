@@ -7,10 +7,14 @@ from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
 import sys
 
-print(os.getcwd())
-from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
-from Scripts.MyTransforms import *
-from Scripts.LoadImages import *
+try:
+    from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
+    from Scripts.MyTransforms import *
+    from Scripts.LoadImages import *
+except:
+    from MyResNet import ResNet, BasicBlock, Bottleneck
+    from MyTransforms import *
+    from LoadImages import *
 
 
 import visdom
