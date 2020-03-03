@@ -97,7 +97,7 @@ def main():
 
 
     ## my code does not really take this into account
-    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=8, metavar='N',
                         help='input batch size for training (default: 64)')
 
     # nor does it takes this into account
@@ -134,41 +134,48 @@ def main():
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
-    ### LOAD DATA -- on the fly
-#     train_loader = getData("labelled/train/",
-#                            "boneage-training-dataset.csv",
-#                            transform = transforms.Compose(
-#                               [Rescale(256),
-#                                RandomCrop(224),
-#                                ToTensor()
-#                                ]),
-#                            plot = 1, batch_size = args.batch_size)
 
-#     test_loader = getData("labelled/test/",
-#                           "boneage-training-dataset.csv",
-#                            transform=transforms.Compose(
-#                                [Rescale(256),
-#                                 RandomCrop(224),
-#                                 ToTensor()
-#                                 ]),
-#                            plot=1, batch_size="full")
     
     
     # loading premade dataloaders
     # trainloader has a batch size of 128 and testLoader has full size (2611 images)
     print("Your working directory is {}\n".format(os.getcwd()))
     print("Loading data...")
-    train_loader = torch.load("FULLdata/trainLoaded.pt")
-    test_loader = torch.load("FULLdata/testLoaded.pt")
+    if use_cuda:
+        train_loader = torch.load("FULLdata/trainLoaded.pt")
+        test_loader = torch.load("FULLdata/testLoaded.pt")
+    else:
+    ## LOAD DATA -- on the fly
+        train_loader = getData("labelled/train/",
+                               "boneage-training-dataset.csv",
+                               transform = transforms.Compose(
+                                  [Rescale(256),
+                                   RandomCrop(224),
+                                   ToTensor()
+                                   ]),
+                               plot = 1, batch_size = args.batch_size)
+
+        test_loader = getData("labelled/test/",
+                              "boneage-training-dataset.csv",
+                               transform=transforms.Compose(
+                                   [Rescale(256),
+                                    RandomCrop(224),
+                                    ToTensor()
+                                    ]),
+                               plot=1, batch_size="full")
+
     print("Success! Data loaded\n")
     print("Setting up network's architecture...")
     architectures = [(BasicBlock, [2, 2, 2, 2]),
                      (BasicBlock, [3, 4, 6, 3]),
                      (Bottleneck, [3, 4, 6, 3]),
                      (Bottleneck, [3, 4, 23, 3])]
-    
-    arch_choice = sys.argv[1]
-    chosenArch = architectures[arch_choice]
+
+    if sys.argv != ['']:
+        chosenArch = architectures[0]
+    else:
+        arch_choice = sys.argv[1]
+        chosenArch = architectures[arch_choice]
     # set architecture from bash script call
     net = ResNet(chosenArch[0], chosenArch[1], num_classes=1)
     net = net.double()
