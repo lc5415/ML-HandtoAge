@@ -8,25 +8,31 @@ from torchvision import datasets, transforms # maybe will use this in the future
 
 try:
     print("From local", os.getcwd())
-    from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck # relative import fails
+    import Scripts.MyResNet.ResNet as ResNet
+    import Scripts.MyResNet.BasicBlock as BasicBlock
+    import Scripts.MyResNet.Bottleneck as Bottleneck
+    print(ResNet)
+    #from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck # relative import fails
     #import Scripts.MyResNet.ResNet as Resnet
 except:
     print("from cluster", os.getcwd())
-    from MyResNet import ResNet, BasicBlock, Bottleneck
+    import MyResNet.ResNet as ResNet
+    import MyResNet.BasicBlock as BasicBlock
+    import MyResNet.Bottleneck as Bottleneck
 
-# try:
-#     print("From local", os.getcwd())
-#     from Scripts.LoadImages import getData
-# except:
-#     print("from cluster", os.getcwd())
-#     from LoadImages import getData
-#
-# try:
-#     print("From local", os.getcwd())
-#     from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
-# except:
-#     print("from cluster", os.getcwd())
-#     from MyTransforms import Rescale, RandomCrop, ToTensor
+try:
+    print("From local", os.getcwd())
+    from Scripts.LoadImages import getData
+except:
+    print("from cluster", os.getcwd())
+    from LoadImages import getData
+
+try:
+    print("From local", os.getcwd())
+    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
+except:
+    print("from cluster", os.getcwd())
+    from MyTransforms import Rescale, RandomCrop, ToTensor
 
 
 import visdom
