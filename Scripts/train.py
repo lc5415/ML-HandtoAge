@@ -8,21 +8,23 @@ from torchvision import datasets, transforms # maybe will use this in the future
 
 try:
     print("From local", os.getcwd())
-    from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck # relative import fails
+    from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
     print(ResNet)
     #import Scripts.MyResNet.ResNet as Resnet
-except:
+except ModuleNotFoundError:
     print("from cluster", os.getcwd())
-    import MyResNet.ResNet as ResNet
-    import MyResNet.BasicBlock as BasicBlock
-    import MyResNet.Bottleneck as Bottleneck
+    from MyResNet import ResNet, BasicBlock, Bottleneck
+finally:
+    print("no success")
 
 try:
     print("From local", os.getcwd())
     from Scripts.LoadImages import getData
-except:
+except ModuleNotFoundError:
     print("from cluster", os.getcwd())
     from LoadImages import getData
+finally:
+    print("no success")
 
 try:
     print("From local", os.getcwd())
