@@ -7,7 +7,6 @@ from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
 import sys
 
-!dir
 from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
 from Scripts.MyTransforms import *
 from Scripts.LoadImages import *
