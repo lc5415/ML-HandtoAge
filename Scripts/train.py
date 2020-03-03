@@ -8,7 +8,6 @@ from torchvision import datasets, transforms # maybe will use this in the future
 
 try:
     from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
-
 except ModuleNotFoundError:
     from MyResNet import ResNet, BasicBlock, Bottleneck
 
@@ -18,9 +17,12 @@ except ModuleNotFoundError:
     from LoadImages import getData
 
 try:
+    print("From local", os.getcwd())
     from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
 except ModuleNotFoundError:
+    print("from cluster", os.getcwd())
     from MyTransforms import Rescale, RandomCrop, ToTensor
+
 
 import visdom
 import numpy as np
