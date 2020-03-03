@@ -7,13 +7,17 @@ from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
 
 try:
+    print("From local", os.getcwd())
     from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
 except ModuleNotFoundError:
+    print("from cluster", os.getcwd())
     from MyResNet import ResNet, BasicBlock, Bottleneck
 
 try:
+    print("From local", os.getcwd())
     from Scripts.LoadImages import getData
 except ModuleNotFoundError:
+    print("from cluster", os.getcwd())
     from LoadImages import getData
 
 try:
