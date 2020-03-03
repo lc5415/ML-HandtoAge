@@ -5,9 +5,15 @@ import torch.nn.functional as F
 import argparse
 from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
-from Scripts.LoadImages import getData
-from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
-from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
+
+try:
+    from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
+    from Scripts.LoadImages import getData
+    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
+except ImportError:
+    from MyResNet import ResNet, BasicBlock, Bottleneck
+    from LoadImages import getData
+    from MyTransforms import Rescale, RandomCrop, ToTensor
 import visdom
 import numpy as np
 import pandas as pd
