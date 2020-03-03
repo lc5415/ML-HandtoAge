@@ -8,7 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import multiprocessing
 import torchvision.utils as utils
-from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
+try: 
+    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
+except:
+    from MyTransforms import Rescale, RandomCrop, ToTensor
 from torchvision.transforms import Normalize
 plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
 

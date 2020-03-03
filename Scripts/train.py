@@ -7,10 +7,10 @@ from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
 import sys
 
-print(os.getcwd())
-from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
-from Scripts.MyTransforms import *
-from Scripts.LoadImages import *
+from MyResNet import ResNet, BasicBlock, Bottleneck
+from MyTransforms import *
+from LoadImages import *
+print("Local modules imported")
 
 
 import visdom
@@ -151,7 +151,7 @@ def main():
                                    RandomCrop(224),
                                    ToTensor()
                                    ]),
-                               plot = 1, batch_size = args.batch_size)
+                               plot = 0, batch_size = args.batch_size)
 
         test_loader = getData("labelled/test/",
                               "boneage-training-dataset.csv",
@@ -160,7 +160,7 @@ def main():
                                     RandomCrop(224),
                                     ToTensor()
                                     ]),
-                               plot=1, batch_size="full")
+                               plot=0, batch_size="full")
 
     print("Success! Data loaded\n")
     print("Setting up network's architecture...")
