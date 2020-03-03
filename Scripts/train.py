@@ -8,12 +8,20 @@ from torchvision import datasets, transforms # maybe will use this in the future
 
 try:
     from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
-    from Scripts.LoadImages import getData
-    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
+
 except ModuleNotFoundError:
     from MyResNet import ResNet, BasicBlock, Bottleneck
+
+try:
+    from Scripts.LoadImages import getData
+except ModuleNotFoundError:
     from LoadImages import getData
+
+try:
+    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
+except ModuleNotFoundError:
     from MyTransforms import Rescale, RandomCrop, ToTensor
+
 import visdom
 import numpy as np
 import pandas as pd
