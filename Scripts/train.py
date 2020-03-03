@@ -5,36 +5,18 @@ import torch.nn.functional as F
 import argparse
 from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
+import sys
+sys.path.append('/Scripts')
 
-try:
-    print("From local", os.getcwd())
-    from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
-    print(ResNet)
-    #import Scripts.MyResNet.ResNet as Resnet
-except ModuleNotFoundError:
-    print("from cluster", os.getcwd())
-    from MyResNet import ResNet, BasicBlock, Bottleneck
-
-try:
-    print("From local", os.getcwd())
-    from Scripts.LoadImages import getData
-except ModuleNotFoundError:
-    print("from cluster", os.getcwd())
-    from LoadImages import getData
-
-try:
-    print("From local", os.getcwd())
-    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
-except:
-    print("from cluster", os.getcwd())
-    from MyTransforms import Rescale, RandomCrop, ToTensor
+from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
+from Scripts.MyTransforms import *
+from Scripts.LoadImages import *
 
 
 import visdom
 import numpy as np
 import pandas as pd
 
-import sys # to take args from bash script
 
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
@@ -121,7 +103,7 @@ def main():
                         help='input batch size for testing (default: 1000)')
 
     ## will likely need to change this
-    parser.add_argument('--epochs', type=int, default=50, metavar='N',
+    parser.add_argument('--epochs', type=int, default=3, metavar='N',
                         help='number of epochs to train (default: 14)')
 
     ## may need to do CV for this
@@ -223,8 +205,8 @@ def main():
 #                  Y=np.array([test_loss]),
 #                  win="Test", update="append",
 #                 opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
-        
-        Loss_monitor = Loss_monitor.append([train_loss, test_loss])
+
+        Loss_monitor.loc[len(Loss_monitor)] = [train_loss, test_loss]
         scheduler.step()
 
     if args.save_model:
@@ -235,4 +217,5 @@ def main():
 if __name__ == "__main__":
     # NOT USING VISDOM FOR NOW
     # viz = visdom.Visdom(port = 8097)
+    print(os.listdir())
     main()
