@@ -14,8 +14,6 @@ try:
 except ModuleNotFoundError:
     print("from cluster", os.getcwd())
     from MyResNet import ResNet, BasicBlock, Bottleneck
-finally:
-    print("no success")
 
 try:
     print("From local", os.getcwd())
@@ -23,8 +21,6 @@ try:
 except ModuleNotFoundError:
     print("from cluster", os.getcwd())
     from LoadImages import getData
-finally:
-    print("no success")
 
 try:
     print("From local", os.getcwd())
