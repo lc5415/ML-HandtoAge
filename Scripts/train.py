@@ -8,11 +8,8 @@ from torchvision import datasets, transforms # maybe will use this in the future
 
 try:
     print("From local", os.getcwd())
-    import Scripts.MyResNet.ResNet as ResNet
-    import Scripts.MyResNet.BasicBlock as BasicBlock
-    import Scripts.MyResNet.Bottleneck as Bottleneck
+    from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck # relative import fails
     print(ResNet)
-    #from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck # relative import fails
     #import Scripts.MyResNet.ResNet as Resnet
 except:
     print("from cluster", os.getcwd())
