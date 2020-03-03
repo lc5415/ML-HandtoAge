@@ -15,18 +15,18 @@ except:
     from MyResNet import ResNet, BasicBlock, Bottleneck
 
 try:
-    print("From local", os.getcwd())
-    from Scripts.LoadImages import getData
-except:
     print("from cluster", os.getcwd())
     from LoadImages import getData
+except:
+    print("From local", os.getcwd())
+    from Scripts.LoadImages import getData
 
 try:
-    print("From local", os.getcwd())
-    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
-except:
     print("from cluster", os.getcwd())
     from MyTransforms import Rescale, RandomCrop, ToTensor
+except:
+    print("From local", os.getcwd())
+    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
 
 
 import visdom
