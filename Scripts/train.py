@@ -150,10 +150,12 @@ def main():
     
     # loading premade dataloaders
     # trainloader has a batch size of 128 and testLoader has full size (2611 images)
+    print("Your working directory is {}\n".format(os.getcwd()))
+    print("Loading data...")
     train_loader = torch.load("FULLdata/trainLoaded.pt")
     test_loader = torch.load("FULLdata/testLoaded.pt")
-
-
+    print("Success! Data loaded\n")
+    print("Setting up network's architecture...")
     architectures = [(BasicBlock, [2, 2, 2, 2]),
                      (BasicBlock, [3, 4, 6, 3]),
                      (Bottleneck, [3, 4, 6, 3]),
@@ -165,7 +167,7 @@ def main():
     net = ResNet(chosenArch[0], chosenArch[1], num_classes=1)
     net = net.double()
     model = net.to(device)
-
+    print("You have loaded a ResNet with {} blocks and {} layers".format(str(BasicBlock), str(chosenArch[1])))
     # does the optimizer I use matter?
     # optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
