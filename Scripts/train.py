@@ -91,7 +91,7 @@ def main():
 
 
     ## my code does not really take this into account
-    parser.add_argument('--batch-size', type=int, default=16, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
 
     # nor does it takes this into account
@@ -99,7 +99,7 @@ def main():
                         help='input batch size for testing (default: 1000)')
 
     ## will likely need to change this
-    parser.add_argument('--epochs', type=int, default=20, metavar='N',
+    parser.add_argument('--epochs', type=int, default=50, metavar='N',
                         help='number of epochs to train (default: 14)')
 
     ## may need to do CV for this
@@ -167,8 +167,8 @@ def main():
     model = net.to(device)
 
     # does the optimizer I use matter?
-    optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
-
+    # optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     # change this to multistep after initial training
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
