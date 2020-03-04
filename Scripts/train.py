@@ -6,6 +6,8 @@ import argparse
 from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
 import sys
+from torch.utils.data import DataLoader
+
 
 
 try:
@@ -16,7 +18,7 @@ except:
     from MyResNet import ResNet, BasicBlock, Bottleneck
     from MyTransforms import *
     from LoadImages import *
-    print("Local modules imported")
+print("Local modules imported")
 
 
 
@@ -73,7 +75,7 @@ def test(args, model, device, test_loader):
     correct = 0
     with torch.no_grad():
         # model evaulation is only performed in one batch 
-        for batch in test_loader:
+        for batch_id, batch in enumerate(test_loader):
             data, target = batch['image'].to(device), batch['age'].to(device)
             data = data.double()
             target = target.double()
@@ -89,7 +91,7 @@ def test(args, model, device, test_loader):
             #correct += pred.eq(target.view_as(pred)).sum().item()
     
     # this now computes the MSE
-    test_loss /= len(test_loader.dataset)
+    test_loss /= (np.floor(len(test_loader.dataset)/500)*500)
 
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
@@ -153,8 +155,27 @@ def main():
     print("Your working directory is {}\n".format(os.getcwd()))
     print("Loading data...")
     if use_cuda:
-        train_loader = torch.load("FULLdata/trainLoaded.pt")
-        test_loader = torch.load("FULLdata/testLoaded.pt")
+#         train_loader = test_loader = DataLoader()
+#         train_loader = torch.load("FULLdata/trainLoaded.pt")
+#         test_loader = torch.load("FULLdata/testLoaded.pt")
+        train_loader = getData("FULLdata/training",
+                               "boneage-training-dataset.csv",
+                               transform = transforms.Compose(
+                                  [Rescale(256),
+                                   RandomCrop(224),
+                                   ToTensor()
+                                   ]),
+                               batch_size=128, normalise=True, plot = 0, save = 0)
+
+        test_loader = getData("FULLdata/test",
+                              "boneage-training-dataset.csv",
+                               transform=transforms.Compose(
+                                   [Rescale(256),
+                                    RandomCrop(224),
+                                    ToTensor()
+                                    ]),
+                               batch_size=500, normalise=True, plot = 0, save = 0)
+        
     else:
     ## LOAD DATA -- on the fly
         train_loader = getData("labelled/train/",
