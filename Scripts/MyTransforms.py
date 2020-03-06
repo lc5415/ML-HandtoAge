@@ -93,12 +93,10 @@ class CenterCrop(object):
         h, w = image.shape[:2]
         new_h, new_w = self.output_size
 
-        center = np.ceil(np.array(h/2, w/2))
+        h_center, w_center = int(np.ceil(h/2)), int(np.ceil(w/2))
 
-        # new image is selected between the calculated top, which would
-        # actually be bottom I feel and top +new_height
-        image = image[center[0]-new_h/2: center[0] + new_h/2,
-                center[1]-new_w/2: center[1] + new_w/2]
+        image = image[int(h_center-new_h/2): int(h_center + new_h/2),
+                int(w_center-new_w/2): int(w_center + new_w/2)]
 
         return {'image': image, 'age': sample['age'], 'sex': sample['sex']}
 

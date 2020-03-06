@@ -162,7 +162,8 @@ def main():
                                "boneage-training-dataset.csv",
                                transform = transforms.Compose(
                                   [Rescale(256),
-                                   RandomCrop(224),
+                                    # RandomCrop(224),
+                                   CenterCrop(224),
                                    ToTensor()
                                    ]),
                                batch_size=128, normalise=True, plot = 0, save = 0)
@@ -171,7 +172,8 @@ def main():
                               "boneage-training-dataset.csv",
                                transform=transforms.Compose(
                                    [Rescale(256),
-                                    RandomCrop(224),
+                                    #RandomCrop(224),
+                                    CenterCrop(224),
                                     ToTensor()
                                     ]),
                                batch_size=500, normalise=True, plot = 0, save = 0)
@@ -182,7 +184,8 @@ def main():
                                "boneage-training-dataset.csv",
                                transform = transforms.Compose(
                                   [Rescale(256),
-                                   RandomCrop(224),
+                                   #RandomCrop(224),
+                                   CenterCrop(224),
                                    ToTensor()
                                    ]),
                                plot = 0, batch_size = args.batch_size)
@@ -191,7 +194,8 @@ def main():
                               "boneage-training-dataset.csv",
                                transform=transforms.Compose(
                                    [Rescale(256),
-                                    RandomCrop(224),
+                                    #RandomCrop(224),
+                                    CenterCrop(224),
                                     ToTensor()
                                     ]),
                                plot=0, batch_size="full")

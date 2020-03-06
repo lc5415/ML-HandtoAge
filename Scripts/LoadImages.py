@@ -306,6 +306,7 @@ def FullBatchStats(dataloaded):
 #                           "boneage-training-dataset.csv",
 #                           transform=transforms.Compose(
 #                                   [Rescale(256),
-#                                    RandomCrop(224), # CenterCrop(224),
+#                                    # RandomCrop(224),
+#                                    CenterCrop(224),
 #                                    ToTensor()
 #                                    ]), batch_size="full", normalise=True, plot = 1)
