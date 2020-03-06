@@ -212,6 +212,15 @@ def main():
     # set architecture from bash script call
     net = ResNet(chosenArch[0], chosenArch[1], num_classes=1)
     net = net.double()
+    
+    ############ TRYING PARALLEL GPU WORK #####################
+    if torch.cuda.device_count() > 1:
+      print("Let's use", torch.cuda.device_count(), "GPUs!")
+      # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+      net = nn.DataParallel(net)
+    ############################################################
+    
+    
     model = net.to(device)
     print("You have loaded a ResNet with {} blocks and {} layers".format(str(chosenArch[0]), str(chosenArch[1])))
     # does the optimizer I use matter?
