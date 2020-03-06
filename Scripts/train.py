@@ -113,7 +113,7 @@ def main():
                         help='input batch size for testing (default: 1000)')
 
     ## will likely need to change this
-    parser.add_argument('--epochs', type=int, default=100, metavar='N',
+    parser.add_argument('--epochs', type=int, default=60, metavar='N',
                         help='number of epochs to train (default: 14)')
 
     ## may need to do CV for this
