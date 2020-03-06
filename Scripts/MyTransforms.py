@@ -71,6 +71,37 @@ class RandomCrop(object):
 
         return {'image': image, 'age': sample['age'], 'sex': sample['sex']}
 
+class CenterCrop(object):
+    """Crop at the center
+
+    Args:
+        output_size (tuple or int): Desired output size. If int, square crop
+            is made.
+    """
+
+    def __init__(self, output_size):
+        assert isinstance(output_size, (int, tuple))
+        if isinstance(output_size, int):
+            self.output_size = (output_size, output_size)
+        else:
+            assert len(output_size) == 2
+            self.output_size = output_size
+
+    def __call__(self, sample):
+
+        image = sample['image']
+        h, w = image.shape[:2]
+        new_h, new_w = self.output_size
+
+        center = np.ceil(np.array(h/2, w/2))
+
+        # new image is selected between the calculated top, which would
+        # actually be bottom I feel and top +new_height
+        image = image[center[0]-new_h/2: center[0] + new_h/2,
+                center[1]-new_w/2: center[1] + new_w/2]
+
+        return {'image': image, 'age': sample['age'], 'sex': sample['sex']}
+
 
 class ToTensor(object):
     """Convert ndarrays in image to Tensors."""
