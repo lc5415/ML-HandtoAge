@@ -229,10 +229,7 @@ def Load(dataset, batch_size = 20, plot = 0):
         #       sample_batched['image'].size(),
         #       sample_batched['age'].size()),
         #       sample_batched['sex'].size()) # dictionary version
-        print(i_batch,
-              image.size(),
-              age.size()),
-              sex.size())
+        print(i_batch, image.size(), age.size(), sex.size())
 
         # observe 4th batch and stop.
         if i_batch == len(dataloader)-1 and plot != 0: # dataloader.batch_size - 1:

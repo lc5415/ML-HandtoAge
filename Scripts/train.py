@@ -31,9 +31,13 @@ def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
     train_loss = 0
     lossPerBatch = pd.DataFrame(columns=["epoch","batchNum", "Train_loss"])
-    for batch_idx, batch in enumerate(train_loader):
+    #for batch_idx, batch in enumerate(train_loader):
+    for batch_idx, (data, target, _) in enumerate(train_loader):
         # get the inputs in correct format and pass them onto CPU/GPU
-        data, target = batch['image'].to(device), batch['age'].to(device)
+        # data, target = batch['image'].to(device), batch['age'].to(device) # dictionary version
+
+        data = data.to(device)
+        target = target.to(device)
 
         data = data.double()
         target = target.double()
@@ -75,8 +79,13 @@ def test(args, model, device, test_loader):
     correct = 0
     with torch.no_grad():
         # model evaulation is only performed in one batch 
-        for batch_id, batch in enumerate(test_loader):
-            data, target = batch['image'].to(device), batch['age'].to(device)
+        # for batch_idx, batch in enumerate(test_loader):
+        for batch_idx, (data, target, _) in enumerate(test_loader):
+            # get the inputs in correct format and pass them onto CPU/GPU
+            # data, target = batch['image'].to(device), batch['age'].to(device) # dictionary version
+            data = data.to(device)
+            target = target.to(device)
+
             data = data.double()
             target = target.double()
             output = model(data)
@@ -217,9 +226,9 @@ def main():
     chosenArch = architectures[args.arch-1]
     # set architecture from bash script call
     net = ResNet(chosenArch[0], chosenArch[1], num_classes=1)
-    net = net.double()
 
     print(summary(net, input_size=(1, 224, 224)))
+    net = net.double()
 
     ############ TRYING PARALLEL GPU WORK #####################
     if torch.cuda.device_count() > 1:
@@ -240,7 +249,7 @@ def main():
                   optim.SGD,
                   optim.Adagrad]
 
-    chosenOpti = optimizers[0]
+    chosenOpti = optimList[0]
 
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
