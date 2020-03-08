@@ -19,7 +19,7 @@ plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
 class HandDataset(Dataset):
     """Hand labels dataset."""
 
-    def __init__(self, pandas_df, data_labels, root_dir, transform=None, normalise = True):
+    def __init__(self, pandas_df, data_labels, root_dir, transform=None, normalise = True, outputs = 1):
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -38,6 +38,7 @@ class HandDataset(Dataset):
         # pass whatever transform you'd like to apply to the data
         self.transform = transform
         self.normalise = normalise
+        self.outputs = 1 # number of outputs to spit
 
     def __len__(self):
         # return number of indices in this dataset (aka, number of images in whole dataset)
@@ -81,9 +82,10 @@ class HandDataset(Dataset):
             # return transformed image
             sample = {'image': image, 'age': age, 'sex': sex}
 
+        if self.outputs == 1:
+            sample = {'image': image, 'age': age}
 
-
-        return sample
+        return image, age # sample
 
     def plot_img(self, idx):
 
@@ -219,9 +221,10 @@ def Load(dataset, batch_size = 20, plot = 0):
 
     for i_batch, sample_batched in enumerate(dataloader):
 
-        print(i_batch, sample_batched['image'].size(),
-              sample_batched['age'].size(),
-              sample_batched['sex'].size())
+        print(i_batch) #,
+              #sample_batched['image'].size(),
+              #sample_batched['age'].size())#,
+              #sample_batched['sex'].size()) #### write this again later
 
         # observe 4th batch and stop.
         if i_batch == len(dataloader)-1 and plot != 0: # dataloader.batch_size - 1:

@@ -7,7 +7,7 @@ from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms # maybe will use this in the future
 import sys
 from torch.utils.data import DataLoader
-
+from torchsummary import summary
 
 
 try:
@@ -206,18 +206,26 @@ def main():
                      (BasicBlock, [3, 4, 6, 3]),
                      (Bottleneck, [3, 4, 6, 3]),
                      (Bottleneck, [3, 4, 23, 3])]
-    
+
+    #################################################################
+    #                                                               #
+    #        From 1st experiment we are choosing ResNet1            #
+    #                                                               #
+    #################################################################
+
     # here is where the input from the command line comes in
     chosenArch = architectures[args.arch-1]
     # set architecture from bash script call
     net = ResNet(chosenArch[0], chosenArch[1], num_classes=1)
     net = net.double()
-    
+
+    print(summary(net, input_size=(1, 224, 224)))
+
     ############ TRYING PARALLEL GPU WORK #####################
     if torch.cuda.device_count() > 1:
       print("Let's use", torch.cuda.device_count(), "GPUs!")
       # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-      net = nn.DataParallel(net)
+      net = torch.nn.DataParallel(net)
     ############################################################
     
     
@@ -225,6 +233,16 @@ def main():
     print("You have loaded a ResNet with {} blocks and {} layers".format(str(chosenArch[0]), str(chosenArch[1])))
     # does the optimizer I use matter?
     # optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
+
+    ####################### LEFT IT HERE #################
+    optimList = [optim.Adam,
+                  optim.Adadelta,
+                  optim.SGD,
+                  optim.Adagrad]
+
+    chosenOpti = optimizers[0]
+
+
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     # change this to multistep after initial training
