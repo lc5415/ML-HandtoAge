@@ -16,6 +16,8 @@ except:
 print("Local modules imported")
 
 def find_lr(init_value = 1e-8, final_value=10., beta = 0.98):
+    # the bit down here comes from "maths" in Sylvain gugger's blog
+    # basically we need one more batch for this whole thing to make sense
     num = len(train_loader)-1
     mult = (final_value / init_value) ** (1/num)
     lr = init_value
@@ -30,12 +32,14 @@ def find_lr(init_value = 1e-8, final_value=10., beta = 0.98):
         batch_num += 1
         #As before, get the loss for this mini-batch of inputs/outputs
         inputs,label1, _ = data
-        inputs, label1, _ = Variable(inputs), Variable(labels)
+        # inputs, label1, _ = Variable(inputs), Variable(labels)
+        inputs, label1 = inputs.double(), label1.double()
+
         optimizer.zero_grad()
         outputs = net(inputs)
-        loss = criterion(outputs, labels)
+        loss = criterion(outputs, label1)
         #Compute the smoothed loss
-        avg_loss = beta * avg_loss + (1-beta) *loss.data[0]
+        avg_loss = beta * avg_loss + (1-beta) *loss.item()
         smoothed_loss = avg_loss / (1 - beta**batch_num)
         #Stop if the loss is exploding
         if batch_num > 1 and smoothed_loss > 4 * best_loss:
@@ -92,7 +96,7 @@ else:
                                 CenterCrop(224),
                                 ToTensor()
                                 ]),
-                           plot=0, batch_size=128)
+                           plot=0, batch_size=8)
 
     test_loader = getData("../labelled/test/",
                           "../boneage-training-dataset.csv",
@@ -110,6 +114,9 @@ net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes = 1)
 net = net.double()
 optimizer = optim.SGD(net.parameters(),lr=1e-1)
 criterion = F.l1_loss
+
+logs, losses = find_lr()
+plt.plot(logs[10:-5], losses[10:-5])
 
 # learner = Learner(bunch, net, metrics = mae)
 # learner.lr_find()

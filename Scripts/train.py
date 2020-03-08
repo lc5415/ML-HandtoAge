@@ -114,7 +114,7 @@ def main():
 
 
     ## my code does not really take this into account
-    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=8, metavar='N',
                         help='input batch size for training (default: 64)')
 
     # nor does it takes this into account
@@ -259,6 +259,7 @@ def main():
 
     Loss_monitor = pd.DataFrame(columns=["Train loss", "Test loss"])
     trainLossBatch = pd.DataFrame(columns=["epoch", "batchNum", "Train Loss"])
+    print("Starting training :) \n\n")
     for epoch in range(1, args.epochs + 1):
         train_loss, lossPerBatch = train(args, model, device, train_loader, optimizer, epoch)
         test_loss = test(args, model, device, test_loader)
