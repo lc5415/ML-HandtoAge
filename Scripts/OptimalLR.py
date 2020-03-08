@@ -114,9 +114,10 @@ net = net.double()
 optimizer = optim.SGD(net.parameters(),lr=1e-1)
 criterion = F.l1_loss
 
+print("Starting learning rate optimization:")
 logs, losses = find_lr()
 plt.plot(logs[10:-5], losses[10:-5])
-
+print("Optimization finished.")
 # learner = Learner(bunch, net, metrics = mae)
 # learner.lr_find()
 #
