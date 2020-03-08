@@ -82,18 +82,19 @@ class HandDataset(Dataset):
             # return transformed image
             sample = {'image': image, 'age': age, 'sex': sex}
 
-        if self.outputs == 1:
-            sample = {'image': image, 'age': age}
+        # if self.outputs == 1:
+        #     sample = {'image': image, 'age': age}
 
-        return image, age # sample
+        return image, age, sex # sample
 
     def plot_img(self, idx):
 
         """If transforms has been applied this will plot the transformed images"""
 
         # get sample with given id and retrieve the image from there
-        img = self.__getitem__(idx)['image']
+        img, _ = self.__getitem__(idx)
 
+        #img = self.__getitem__(idx)['image'] # dictionary version
         # If a transform was applied reorder the image so that it can be plotted
         if self.transform:
             img = np.transpose(img, (1, 2, 0))
@@ -129,8 +130,9 @@ class HandDataset(Dataset):
                                                      len(self.labels_index),
                                                      n_images)):
 
-            sample = self.__getitem__(img_id)
-            img = sample['image']
+            # sample = self.__getitem__(img_id)
+            # img = sample['image'] # dictionary version
+            img, _ = self.__getitem__(img_id)
 
             # standard input size is [1,224,224] when transformed, as this is torch preferred
             # input format, line below is transposing to [224,224,1]
@@ -164,7 +166,9 @@ class HandDataset(Dataset):
         for k, img_id in enumerate(np.random.randint(0,
                                                      len(self.labels_index),
                                                      n_images)):
-            img = self.__getitem__(img_id)['image']
+            # img = self.__getitem__(img_id)['image']
+            img, _ = self.__getitem__(img_id)
+
             # standard input size is [1,224,224] when transformed, as this is torch preferred
             # input format, line below is transposing to [224,224,1]
             if self.transform:
@@ -219,12 +223,16 @@ def Load(dataset, batch_size = 20, plot = 0):
         plt.imshow(grid.numpy().transpose((1, 2, 0)))
         plt.show()
 
-    for i_batch, sample_batched in enumerate(dataloader):
+    for i_batch, (image, age, sex) in enumerate(dataloader):
 
-        print(i_batch) #,
-              #sample_batched['image'].size(),
-              #sample_batched['age'].size())#,
-              #sample_batched['sex'].size()) #### write this again later
+        # print(i_batch),
+        #       sample_batched['image'].size(),
+        #       sample_batched['age'].size()),
+        #       sample_batched['sex'].size()) # dictionary version
+        print(i_batch,
+              image.size(),
+              age.size()),
+              sex.size())
 
         # observe 4th batch and stop.
         if i_batch == len(dataloader)-1 and plot != 0: # dataloader.batch_size - 1:
@@ -290,13 +298,17 @@ def FullBatchStats(dataloaded):
     will return the dataloader statistics (mean and std)"""
 
     if len(dataloaded) == 1:
-        for id, batch in enumerate(dataloaded):
-            b_mean, b_std = batch['image'].mean(), batch['image'].std()
+        # for id, batch in enumerate(dataloaded):
+        #     b_mean, b_std = batch['image'].mean(), batch['image'].std()
+        for id, (image, _, _) in enumerate(dataloaded):
+            b_mean, b_std = image.mean(), image.std()
 
     else:
         b_all = []
-        for id, batch in enumerate(dataloaded):
-            b_all.append(batch['image'].flatten())
+        # for id, batch in enumerate(dataloaded):
+        #     b_all.append(batch['image'].flatten())
+        for id, (image, _, _) in enumerate(dataloaded):
+            b_all.append(image.flatten())
         b_mean = b_all.mean()
         b_std = b_all.std()
 
