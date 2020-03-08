@@ -1,4 +1,6 @@
 import torch
+import torch.optim as optim
+import torch.nn.functional as F
 
 from fastai.vision import *
 from fastai.metrics import mae
@@ -14,7 +16,7 @@ except:
 print("Local modules imported")
 
 def find_lr(init_value = 1e-8, final_value=10., beta = 0.98):
-    num = len(trn_loader)-1
+    num = len(train_loader)-1
     mult = (final_value / init_value) ** (1/num)
     lr = init_value
     optimizer.param_groups[0]['lr'] = lr
@@ -23,11 +25,12 @@ def find_lr(init_value = 1e-8, final_value=10., beta = 0.98):
     batch_num = 0
     losses = []
     log_lrs = []
-    for data in trn_loader:
+    # one epoch
+    for data in train_loader:
         batch_num += 1
         #As before, get the loss for this mini-batch of inputs/outputs
-        inputs,labels = data
-        inputs, labels = Variable(inputs), Variable(labels)
+        inputs,label1, _ = data
+        inputs, label1, _ = Variable(inputs), Variable(labels)
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, labels)
@@ -105,7 +108,8 @@ print("Success! Data loaded\n")
 
 net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes = 1)
 net = net.double()
-bunch = DataBunch(train_dl= train_loader, valid_dl = test_loader)
+optimizer = optim.SGD(net.parameters(),lr=1e-1)
+criterion = F.l1_loss
 
 # learner = Learner(bunch, net, metrics = mae)
 # learner.lr_find()
