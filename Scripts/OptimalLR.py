@@ -2,8 +2,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 
-from fastai.vision import *
-from fastai.metrics import mae
+import math
 
 try:
     from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
