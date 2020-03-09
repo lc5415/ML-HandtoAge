@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import argparse
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 from torchvision import datasets, transforms # maybe will use this in the future
 import sys
 from torch.utils.data import DataLoader
@@ -71,7 +71,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
         # like the mean. train loss is SSE, the thing we are dividing by is N.
         
         # we would prefer to output RMSE to have everything on same scale
-    return train_loss/len(train_loader.dataset), lossPerBatch
+    return train_loss/(np.floor(len(train_loader.dataset) / train_loader.batch_size) * train_loader.batch_size), lossPerBatch
 
 def test(args, model, device, test_loader):
     model.eval()
@@ -100,7 +100,7 @@ def test(args, model, device, test_loader):
             #correct += pred.eq(target.view_as(pred)).sum().item()
     
     # this now computes the MSE
-    test_loss /= (np.floor(len(test_loader.dataset)/500)*500)
+    test_loss /= (np.floor(len(test_loader.dataset)/args.test_batch_size)*args.test_batch_size)
 
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
@@ -114,11 +114,11 @@ def main():
 
 
     ## my code does not really take this into account
-    parser.add_argument('--batch-size', type=int, default=8, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
 
     # nor does it takes this into account
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+    parser.add_argument('--test-batch-size', type=int, default=500, metavar='N',
                         help='input batch size for testing (default: 1000)')
 
     ## will likely need to change this
@@ -175,7 +175,7 @@ def main():
                                    CenterCrop(224),
                                    ToTensor()
                                    ]),
-                               batch_size=128, normalise=True, plot = 0, save = 0)
+                               batch_size=args.batch_size, normalise=True, plot = 0, save = 0)
 
         test_loader = getData("FULLdata/test",
                               "boneage-training-dataset.csv",
@@ -185,7 +185,7 @@ def main():
                                     CenterCrop(224),
                                     ToTensor()
                                     ]),
-                               batch_size=500, normalise=True, plot = 0, save = 0)
+                               batch_size=args.test_batch_size, normalise=True, plot = 0, save = 0)
         
     else:
     ## LOAD DATA -- on the fly
@@ -197,7 +197,7 @@ def main():
                                    CenterCrop(224),
                                    ToTensor()
                                    ]),
-                               plot = 0, batch_size = args.batch_size)
+                               plot = 0, batch_size = 8)
 
         test_loader = getData("labelled/test/",
                               "boneage-training-dataset.csv",
@@ -226,10 +226,11 @@ def main():
     chosenArch = architectures[args.arch-1]
     # set architecture from bash script call
     net = ResNet(chosenArch[0], chosenArch[1], num_classes=1)
-
-    print(summary(net, input_size=(1, 224, 224)))
+    
+    model = net.to(device)
+    print(summary(model, input_size=(1, 224, 224)))
     net = net.double()
-
+    
     ############ TRYING PARALLEL GPU WORK #####################
     if torch.cuda.device_count() > 1:
       print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -238,10 +239,8 @@ def main():
     ############################################################
     
     
-    model = net.to(device)
+
     print("You have loaded a ResNet with {} blocks and {} layers".format(str(chosenArch[0]), str(chosenArch[1])))
-    # does the optimizer I use matter?
-    # optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
     ####################### LEFT IT HERE #################
     optimList = [optim.Adam,
@@ -252,10 +251,11 @@ def main():
     chosenOpti = optimList[0]
 
 
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr)
 
     # change this to multistep after initial training
-    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
+    scheduler = ReduceLROnPlateau(optimizer, factor = 0.25, patience = 5)
+        #StepLR(optimizer, step_size=1, gamma=args.gamma)
 
     Loss_monitor = pd.DataFrame(columns=["Train loss", "Test loss"])
     trainLossBatch = pd.DataFrame(columns=["epoch", "batchNum", "Train Loss"])
@@ -280,13 +280,14 @@ def main():
 
         Loss_monitor.loc[len(Loss_monitor)] = [train_loss, test_loss]
         trainLossBatch = trainLossBatch.append(lossPerBatch, ignore_index = True)
-        scheduler.step()
-
+        #scheduler.step()
+        scheduler.step(test_loss) # if using ReduceLROnPlateau scheduler or another that requires this
+        
     if args.save_model:
         torch.save(model.state_dict(), "HtoA.pt")
 
-    Loss_monitor.to_csv("Results/TrainTestLoss"+str(args.arch)+".csv")
-    trainLossBatch.to_csv("Results/LossPBatch"+str(args.arch)+".csv")
+    Loss_monitor.to_csv("Results/RedOnPlateauTrainTestLoss"+str(args.arch)+".csv")
+    trainLossBatch.to_csv("Results/RedOnPlateauLossPBatch"+str(args.arch)+".csv")
     
 
 if __name__ == "__main__":

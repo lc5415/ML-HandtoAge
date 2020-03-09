@@ -47,14 +47,16 @@ def train(args, model, device, train_loader, optimizer, epoch):
         softi = torch.nn.Softmax(dim = 1) # turning model outcome into probabilities
         pred = torch.max(softi(output), dim = 1).indices
         target = target.squeeze().long()
-        pred = torch.reshape(pred, target.shape)
-
+        pred = torch.reshape(pred, target.shape).cpu()
+        
         loss = F.nll_loss(output, target)
 
+        train_loss += F.nll_loss(output, target, reduction="sum").item()
+        
+        target = target.cpu()
         accPBatch = np.mean(np.array(pred == target).astype(int))
         accPEpoch += np.sum(np.array(pred == target).astype(int))
 
-        train_loss += F.nll_loss(output, target, reduction="sum").item()
         loss.backward()
         optimizer.step()
 
@@ -94,7 +96,7 @@ def test(args, model, device, test_loader):
             softi = torch.nn.Softmax(dim=1)  # turning model outcome into probabilities
             pred = torch.max(softi(output), dim=1).indices
             target = target.squeeze().long()
-            pred = torch.reshape(pred, target.shape)
+            pred = torch.reshape(pred.cpu(), target.shape).cpu()
 
 
             test_loss += F.nll_loss(output, target, reduction="sum").item()
@@ -102,7 +104,7 @@ def test(args, model, device, test_loader):
             # test_loss += F.l1_loss(output, target, reduction='sum').item()  # sum up batch loss
 
             # ---- This is for classification
-            accTest += np.sum(np.array(pred == target).astype(int))
+            accTest += np.sum(np.array(pred == target.cpu()).astype(int))
 
     # this now computes the MSE
     test_loss /= (np.floor(len(test_loader.dataset) / test_loader.batch_size) * test_loader.batch_size)
@@ -230,14 +232,14 @@ def main():
     # set architecture from bash script call
     net = ResNet(chosenArch[0], chosenArch[1], num_classes=2)
 
-    print(summary(net, input_size=(1, 224, 224)))
+    # print(summary(net, input_size=(1, 224, 224)))
     net = net.double()
 
     ############ TRYING PARALLEL GPU WORK #####################
-    if torch.cuda.device_count() > 1:
-        print("Let's use", torch.cuda.device_count(), "GPUs!")
-        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-        net = torch.nn.DataParallel(net)
+#     if torch.cuda.device_count() > 1:
+#         print("Let's use", torch.cuda.device_count(), "GPUs!")
+#         # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+#         net = torch.nn.DataParallel(net)
     ############################################################
 
     model = net.to(device)
