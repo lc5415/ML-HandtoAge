@@ -11,3 +11,8 @@ plt.plot(arch3["Test loss"], label = "Arch 3")
 plt.legend()
 plt.grid()
 plt.show()
+
+##### OPTIMISATION
+optimising = pd.read_csv('Results/OptimalLR.py')
+plt.plot(optimising["lr"])
+
