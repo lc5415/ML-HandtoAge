@@ -2,6 +2,8 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 
+import pandas as pd
+
 import math
 
 try:
@@ -33,7 +35,9 @@ def find_lr(init_value = 1e-8, final_value=10., beta = 0.98):
         inputs,label1, _ = data
         # inputs, label1, _ = Variable(inputs), Variable(labels)
         inputs, label1 = inputs.double(), label1.double()
-
+        
+        inputs, label1 = inputs.to(device), label1.to(device)
+        
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, label1)
@@ -109,14 +113,23 @@ else:
 
 print("Success! Data loaded\n")
 
+
+device = torch.device("cuda" if use_cuda else "cpu")
+print("You are using a "+str(device))
+
 net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes = 1)
 net = net.double()
+net = net.to(device)
 optimizer = optim.SGD(net.parameters(),lr=1e-1)
 criterion = F.l1_loss
 
 print("Starting learning rate optimization:")
 logs, losses = find_lr()
-plt.plot(logs[10:-5], losses[10:-5])
+
+results = {'lr':logs, 'loss':losses}
+results = pd.DataFrame(results)
+results.to_csv("Results/OptimLR.csv")
+#plt.plot(logs[10:-5], losses[10:-5])
 print("Optimization finished.")
 # learner = Learner(bunch, net, metrics = mae)
 # learner.lr_find()
