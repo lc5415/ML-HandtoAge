@@ -70,7 +70,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
         # like the mean. train loss is SSE, the thing we are dividing by is N.
 
         # we would prefer to output RMSE to have everything on same scale
-    return train_loss / (np.floor(len(train_loader.dataset) / 128) * 128), lossPerBatch, accPEpoch / (np.floor(len(train_loader.dataset) / 128) * 128)
+    return train_loss / (np.floor(len(train_loader.dataset) / train_loader.batch_size) * train_loader.batch_size), lossPerBatch, accPEpoch / (np.floor(len(train_loader.dataset) / train_loader.batch_size) * train_loader.batch_size)
 
 
 def test(args, model, device, test_loader):
@@ -80,7 +80,7 @@ def test(args, model, device, test_loader):
     with torch.no_grad():
         # model evaulation is only performed in one batch
         # for batch_idx, batch in enumerate(test_loader):
-        for batch_idx, (data, target, _) in enumerate(test_loader):
+        for batch_idx, (data, _, target) in enumerate(test_loader):
             # get the inputs in correct format and pass them onto CPU/GPU
             # data, target = batch['image'].to(device), batch['age'].to(device) # dictionary version
             data = data.to(device)
@@ -91,17 +91,21 @@ def test(args, model, device, test_loader):
             output = model(data)
             # this format of mse loss compute the SSE instead of the MSE
             # test_loss += F.mse_loss(output, target, reduction='sum').item()  # sum up batch loss
+            softi = torch.nn.Softmax(dim=1)  # turning model outcome into probabilities
+            pred = torch.max(softi(output), dim=1).indices
+            target = target.squeeze().long()
+            pred = torch.reshape(pred, target.shape)
+
 
             test_loss += F.nll_loss(output, target, reduction="sum").item()
             # Computing l1 loss instead of mse to have loss value in relevant units
             # test_loss += F.l1_loss(output, target, reduction='sum').item()  # sum up batch loss
 
             # ---- This is for classification
-            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-            accTest += pred.eq(target.view_as(pred)).sum().item()
+            accTest += np.sum(np.array(pred == target).astype(int))
 
     # this now computes the MSE
-    test_loss /= (np.floor(len(test_loader.dataset) / 500) * 500)
+    test_loss /= (np.floor(len(test_loader.dataset) / test_loader.batch_size) * test_loader.batch_size)
 
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, accTest, len(test_loader.dataset),
