@@ -13,6 +13,6 @@ plt.grid()
 plt.show()
 
 ##### OPTIMISATION
-optimising = pd.read_csv('Results/OptimalLR.py')
-plt.plot(optimising["lr"])
-
+optimising = pd.read_csv('Results/OptimLR.csv')
+plt.plot(optimising["lr"], optimising["loss"])
+plt.show()
