@@ -245,9 +245,7 @@ def main():
 
     ####################### LEFT IT HERE #################
     optimList = [optim.Adam,
-                  optim.Adadelta,
-                  optim.SGD,
-                  optim.Adagrad]
+                  optim.SGD]
 
     chosenOpti = optimList[0]
 
@@ -255,6 +253,7 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     # change this to multistep after initial training
+    # at each iteration the lr is multiplied by args.gamma (=0.7)
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
 
     Loss_monitor = pd.DataFrame(columns=["Train loss", "Test loss"])
