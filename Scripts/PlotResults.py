@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 arch1 = pd.read_csv('Results/TrainTestLoss1.csv')
 arch2 = pd.read_csv('Results/TrainTestLoss2.csv')
@@ -14,5 +15,8 @@ plt.show()
 
 ##### OPTIMISATION
 optimising = pd.read_csv('Results/OptimLR.csv')
-plt.plot(optimising["lr"], optimising["loss"])
+optimising['lr'] = 10**optimising['lr']
+plt.xscale('symlog')
+plt.grid(True, which='both')
+plt.semilogx(optimising["lr"], optimising["loss"])
 plt.show()
