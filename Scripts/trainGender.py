@@ -108,12 +108,13 @@ def test(args, model, device, test_loader):
 
     # this now computes the MSE
     test_loss /= (np.floor(len(test_loader.dataset) / test_loader.batch_size) * test_loader.batch_size)
+    accPerc = accTest /(np.floor(len(test_loader.dataset) / test_loader.batch_size) * test_loader.batch_size)
 
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, accTest, len(test_loader.dataset),
-        100. * accTest / len(test_loader.dataset)))
+        100. * accPerc))
 
-    return test_loss, accTest
+    return test_loss, accPerc
 
 
 def main():

@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import argparse
-from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau, CyclicLR
 from torchvision import datasets, transforms # maybe will use this in the future
 import sys
 from torch.utils.data import DataLoader
@@ -141,6 +141,8 @@ def main():
     ## may want to do this when submitting multi-node jobs for cross-val
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
+    parser.add_argument('--step-size', type = int, default = 1, metavar = 'SS',
+                       help = 'StepLR scheduler step')
     ######### CUSTOM args
     parser.add_argument('--arch', type = int, default = 1,
                            help = 'ResNet architecture choice')
@@ -235,7 +237,7 @@ def main():
     if torch.cuda.device_count() > 1:
       print("Let's use", torch.cuda.device_count(), "GPUs!")
       # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-      net = torch.nn.DataParallel(net)
+      model = torch.nn.DataParallel(net)
     ############################################################
     
     
@@ -253,8 +255,9 @@ def main():
 
     # change this to multistep after initial training
     # at each iteration the lr is multiplied by args.gamma (=0.7)
-    scheduler = ReduceLROnPlateau(optimizer, factor = 0.25, patience = 5)
-        #StepLR(optimizer, step_size=1, gamma=args.gamma)
+    #scheduler = ReduceLROnPlateau(optimizer, factor = 0.25, patience = 5)
+    # scheduler = StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
+    scheduler = CyclicLR(optimizer, base_lr = 0.02, max_lr = 0.4)
 
     Loss_monitor = pd.DataFrame(columns=["Train loss", "Test loss"])
     trainLossBatch = pd.DataFrame(columns=["epoch", "batchNum", "Train Loss"])
@@ -279,14 +282,14 @@ def main():
 
         Loss_monitor.loc[len(Loss_monitor)] = [train_loss, test_loss]
         trainLossBatch = trainLossBatch.append(lossPerBatch, ignore_index = True)
-        #scheduler.step()
-        scheduler.step(test_loss) # if using ReduceLROnPlateau scheduler or another that requires this
+        scheduler.step()
+        #scheduler.step(test_loss) # if using ReduceLROnPlateau scheduler or another that requires this
         
     if args.save_model:
         torch.save(model.state_dict(), "HtoA.pt")
 
-    Loss_monitor.to_csv("Results/RedOnPlateauTrainTestLoss"+str(args.arch)+".csv")
-    trainLossBatch.to_csv("Results/RedOnPlateauLossPBatch"+str(args.arch)+".csv")
+    Loss_monitor.to_csv("Results/05stepLRTrainTestLoss"+str(args.step_size)+".csv")
+    trainLossBatch.to_csv("Results/05stepLRLossPBatch"+str(args.step_size)+".csv")
     
 
 if __name__ == "__main__":
