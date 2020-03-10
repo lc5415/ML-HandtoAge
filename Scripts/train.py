@@ -139,8 +139,13 @@ def main():
     parser.add_argument('--log-interval', type=int, default=2, metavar='N',
                         help='how many batches to wait before logging training status')
     ## may want to do this when submitting multi-node jobs for cross-val
+<<<<<<< HEAD
     parser.add_argument('--save-net', action='store_true', default=False,
                         help='For Saving the current net')
+=======
+    parser.add_argument('--save-model', action='store_true', default=False,
+                        help='For Saving the current Model')
+>>>>>>> 57325e6... setting up cyclir LR and changing all model to net
     parser.add_argument('--step-size', type = int, default = 1, metavar = 'SS',
                        help = 'StepLR scheduler step')
     ######### CUSTOM args
@@ -237,7 +242,7 @@ def main():
     if torch.cuda.device_count() > 1:
       print("Let's use", torch.cuda.device_count(), "GPUs!")
       # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-      net = torch.nn.DataParallel(net)
+      model = torch.nn.DataParallel(net)
     ############################################################
     
     
