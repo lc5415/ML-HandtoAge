@@ -7,6 +7,7 @@ from skimage import io, transform
 import matplotlib.pyplot as plt
 import numpy as np
 import multiprocessing
+import time
 import torchvision.utils as utils
 try: 
     from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor, CenterCrop
@@ -84,7 +85,7 @@ class HandDataset(Dataset):
 
         # if self.outputs == 1:
         #     sample = {'image': image, 'age': age}
-
+        image, age, sex = sample['image'], sample['age'], sample['sex']
         return image, age, sex # sample
 
     def plot_img(self, idx):
@@ -92,7 +93,7 @@ class HandDataset(Dataset):
         """If transforms has been applied this will plot the transformed images"""
 
         # get sample with given id and retrieve the image from there
-        img, _ = self.__getitem__(idx)
+        img, _, _ = self.__getitem__(idx)
 
         #img = self.__getitem__(idx)['image'] # dictionary version
         # If a transform was applied reorder the image so that it can be plotted
@@ -132,7 +133,7 @@ class HandDataset(Dataset):
 
             # sample = self.__getitem__(img_id)
             # img = sample['image'] # dictionary version
-            img, _ = self.__getitem__(img_id)
+            img, age, _ = self.__getitem__(img_id)
 
             # standard input size is [1,224,224] when transformed, as this is torch preferred
             # input format, line below is transposing to [224,224,1]
@@ -144,7 +145,7 @@ class HandDataset(Dataset):
             plt.imshow(img)
             plt.tight_layout()
             # set title as age
-            ax.set_title(f"{np.array(sample['age'])/12}")
+            ax.set_title(f"{np.array(age)/12}")
 
         if img.shape[0] == img.shape[1]:
             all_axes = fig.get_axes()
@@ -167,7 +168,7 @@ class HandDataset(Dataset):
                                                      len(self.labels_index),
                                                      n_images)):
             # img = self.__getitem__(img_id)['image']
-            img, _ = self.__getitem__(img_id)
+            img, _, _ = self.__getitem__(img_id)
 
             # standard input size is [1,224,224] when transformed, as this is torch preferred
             # input format, line below is transposing to [224,224,1]
@@ -217,7 +218,7 @@ def Load(dataset, batch_size = 20, plot = 0):
 
     def show_batch(sample_batched):
         """Show image with landmarks for a batch of samples."""
-        images_batch = sample_batched['image']
+        images_batch = image
 
         grid = utils.make_grid(images_batch, nrow= int(np.ceil(np.sqrt(images_batch.shape[0]))) )
         plt.imshow(grid.numpy().transpose((1, 2, 0)))
@@ -234,7 +235,7 @@ def Load(dataset, batch_size = 20, plot = 0):
         # observe 4th batch and stop.
         if i_batch == len(dataloader)-1 and plot != 0: # dataloader.batch_size - 1:
             plt.figure()
-            show_batch(sample_batched)
+            show_batch(image)
             plt.axis('off')
             plt.ioff()
             plt.show()
@@ -301,24 +302,44 @@ def FullBatchStats(dataloaded):
             b_mean, b_std = image.mean(), image.std()
 
     else:
-        b_all = []
+        b_all, num_el = 0, 0
         # for id, batch in enumerate(dataloaded):
         #     b_all.append(batch['image'].flatten())
-        for id, (image, _, _) in enumerate(dataloaded):
-            b_all.append(image.flatten())
-        b_mean = b_all.mean()
-        b_std = b_all.std()
+        for _, (image, _, _) in enumerate(dataloaded):
+            b_all += image.flatten().sum()
+            num_el += np.array(image.flatten().shape)
+        b_mean = b_all/num_el
+        b_all = 0
+        for _, (image, _, _) in enumerate(dataloaded):
+            b_all += ((image.flatten()-b_mean)**2).sum()
+        b_std = (b_all/num_el).sqrt()
 
     return b_mean, b_std
 
 
 # SAMPLE CODE
-# if __name__ == "__main__":
-#     data = getData("labelled/train",
-#                           "boneage-training-dataset.csv",
-#                           transform=transforms.Compose(
-#                                   [Rescale(256),
-#                                    # RandomCrop(224),
-#                                    CenterCrop(224),
-#                                    ToTensor()
-#                                    ]), batch_size="full", normalise=True, plot = 1)
+if __name__ == "__main__":
+    st = time.time()
+    data = getData("labelled/train",
+                          "boneage-training-dataset.csv",
+                          transform=transforms.Compose(
+                                  [Rescale(256),
+                                   # RandomCrop(224),
+                                   CenterCrop(224),
+                                   ToTensor()
+                                   ]), batch_size=20, normalise=False, plot = 1)
+    mean_full, std_full = FullBatchStats(data)
+    print(time.time()-st)
+
+    st = time.time()
+    data = getData("labelled/train",
+                   "boneage-training-dataset.csv",
+                   transform=transforms.Compose(
+                       [Rescale(256),
+                        # RandomCrop(224),
+                        CenterCrop(224),
+                        ToTensor()
+                        ]), batch_size="full", normalise=False, plot=1)
+
+    mean2, std2 = FullBatchStats(data)
+    print(time.time()-st)
