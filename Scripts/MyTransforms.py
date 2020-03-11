@@ -1,6 +1,7 @@
 from skimage import transform
 import numpy as np
 import torch
+from torchvision.transforms import Normalize as tchNormalize
 
 class Rescale(object):
     """Rescale the image in a image to a given size.
@@ -114,3 +115,15 @@ class ToTensor(object):
                 'age': torch.from_numpy(sample['age']),
                 'sex': torch.from_numpy(sample['sex'])}
 
+class Normalize(object):
+    """Just adapting the normalise function to my case"""
+
+    def __init__(self, mean_in, std_in):
+        self.mean = mean_in
+        self.std = std_in
+        self.Normal = tchNormalize(mean_in, std_in)
+
+    def __call__(self, sample):
+        image = sample['image']
+        norm_im = self.Normal(tensor=image)
+        return {'image': norm_im, 'age': sample['age'], 'sex': sample['sex']}

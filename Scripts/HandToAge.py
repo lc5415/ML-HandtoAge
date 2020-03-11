@@ -99,3 +99,4 @@ axs[1].set_title('Centered')
 axs[2].imshow(img_normalised)
 axs[2].set_title('Centered+Scaled')
 plt.show()
+

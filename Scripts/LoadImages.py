@@ -2,6 +2,7 @@ import torch
 from torchvision import transforms, utils
 import pandas as pd
 import os, re
+import cv2
 from torch.utils.data import Dataset, DataLoader
 from skimage import io, transform
 import matplotlib.pyplot as plt
@@ -10,17 +11,16 @@ import multiprocessing
 import time
 import torchvision.utils as utils
 try: 
-    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor, CenterCrop
+    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor, CenterCrop, Normalize
 except:
-    from MyTransforms import Rescale, RandomCrop, ToTensor, CenterCrop
-from torchvision.transforms import Normalize
+    from MyTransforms import Rescale, RandomCrop, ToTensor, CenterCrop, Normalize
 plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
 
 
 class HandDataset(Dataset):
     """Hand labels dataset."""
 
-    def __init__(self, pandas_df, data_labels, root_dir, transform=None, normalise = True, outputs = 1):
+    def __init__(self, pandas_df, data_labels, root_dir, transform=None, normalise = True, clahe = True, outputs = 1):
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -39,6 +39,7 @@ class HandDataset(Dataset):
         # pass whatever transform you'd like to apply to the data
         self.transform = transform
         self.normalise = normalise
+        self.clahe = clahe
         self.outputs = 1 # number of outputs to spit
 
     def __len__(self):
@@ -74,12 +75,24 @@ class HandDataset(Dataset):
         if self.transform:
             # transform with transform that was given to the function
             sample = self.transform(sample)
+        if self.clahe:
+            image = sample['image']
+            image = np.array(np.transpose(image, (1,2,0)))
+            image = np.uint8(cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX))
+            claheTrans = cv2.createCLAHE(clipLimit = 2.0, tileGridSize = (8,8))
+            image = claheTrans.apply(image)
+            image = image[:, :, np.newaxis]
+            image = torch.from_numpy(image.transpose((2, 0, 1)))
+            image = image.double()
+            # return transformed image
+            sample = {'image': image, 'age': age, 'sex': sex}
         if self.normalise:
             """IN is hard coded at the moment which may not be ideal """
             # Instance Normalization
             image = sample['image']
-            mean, std = torch.mean(image), torch.std(image)
-            image = (image - mean) / std
+            # mean, std = torch.mean(image), torch.std(image)
+            # image = (image - mean) / std
+            image = (image - image.mean())/(image.max()-image.min())
             # return transformed image
             sample = {'image': image, 'age': age, 'sex': sex}
 
@@ -214,11 +227,14 @@ def Load(dataset, batch_size = 20, plot = 0):
         batch_size = dataset.labels_index.shape[0]
 
     dataloader = DataLoader(dataset, batch_size=batch_size,
-                            shuffle=True, num_workers=cores, drop_last = True)
+                            shuffle=False, num_workers=0, drop_last = True)
 
     def show_batch(sample_batched):
         """Show image with landmarks for a batch of samples."""
-        images_batch = image
+        if image.max() > 1:
+            images_batch = image/255
+        else:
+            images_batch = image
 
         grid = utils.make_grid(images_batch, nrow= int(np.ceil(np.sqrt(images_batch.shape[0]))) )
         plt.imshow(grid.numpy().transpose((1, 2, 0)))
@@ -244,7 +260,7 @@ def Load(dataset, batch_size = 20, plot = 0):
     return dataloader
 
 def getData(image_directory, labels_directory, transform = None,
-            normalise = True, plot = 0, batch_size = 20, save = 0, savename = ""):
+            normalise = True, clahe = False,  plot = 0, batch_size = 20, save = 0, savename = ""):
     """Example: --getting all the data
     dataload = LoadImages.getData("labelled/train/",
 ...                           "boneage-training-dataset.csv",
@@ -278,7 +294,7 @@ def getData(image_directory, labels_directory, transform = None,
     DATASET = HandDataset(labels_indices,
                           data_labels,
                           image_directory,
-                          transform= transform, normalise = normalise)
+                          transform= transform, normalise = normalise, clahe = clahe)
 
     if plot != 0:
         DATASET.plot_n_images()
@@ -326,20 +342,8 @@ if __name__ == "__main__":
                                   [Rescale(256),
                                    # RandomCrop(224),
                                    CenterCrop(224),
-                                   ToTensor()
-                                   ]), batch_size=20, normalise=False, plot = 1)
-    mean_full, std_full = FullBatchStats(data)
-    print(time.time()-st)
-
-    st = time.time()
-    data = getData("labelled/train",
-                   "boneage-training-dataset.csv",
-                   transform=transforms.Compose(
-                       [Rescale(256),
-                        # RandomCrop(224),
-                        CenterCrop(224),
-                        ToTensor()
-                        ]), batch_size="full", normalise=False, plot=1)
-
-    mean2, std2 = FullBatchStats(data)
+                                   ToTensor(),
+                                   #Normalize([0.2011], [0.1847])
+                                   ]), batch_size=20, normalise=False, clahe=True, plot = 1)
+    # mean_full, std_full = FullBatchStats(data)
     print(time.time()-st)
