@@ -27,8 +27,8 @@ import numpy as np
 import pandas as pd
 
 
-def train(args, net, device, train_loader, optimizer, epoch):
-    net.train()
+def train(args, model, device, train_loader, optimizer, epoch):
+    model.train()
     train_loss = 0
     lossPerBatch = pd.DataFrame(columns=["epoch","batchNum", "Train_loss"])
     #for batch_idx, batch in enumerate(train_loader):
@@ -44,7 +44,7 @@ def train(args, net, device, train_loader, optimizer, epoch):
         # initialize the parameters at 0
         optimizer.zero_grad()
 
-        output = net(data)
+        output = model(data)
         # compute loss
         ## change code below from -- we don't wanna be using NLL loss for regression
         # -- loss = F.nll_loss(output, target)
@@ -73,12 +73,12 @@ def train(args, net, device, train_loader, optimizer, epoch):
         # we would prefer to output RMSE to have everything on same scale
     return train_loss/(np.floor(len(train_loader.dataset) / train_loader.batch_size) * train_loader.batch_size), lossPerBatch
 
-def test(args, net, device, test_loader):
-    net.eval()
+def test(args, model, device, test_loader):
+    model.eval()
     test_loss = 0
     correct = 0
     with torch.no_grad():
-        # net evaulation is only performed in one batch
+        # model evaulation is only performed in one batch 
         # for batch_idx, batch in enumerate(test_loader):
         for batch_idx, (data, target, _) in enumerate(test_loader):
             # get the inputs in correct format and pass them onto CPU/GPU
@@ -88,7 +88,7 @@ def test(args, net, device, test_loader):
 
             data = data.double()
             target = target.double()
-            output = net(data)
+            output = model(data)
             # this format of mse loss compute the SSE instead of the MSE
             #test_loss += F.mse_loss(output, target, reduction='sum').item()  # sum up batch loss
 
@@ -126,8 +126,8 @@ def main():
                         help='number of epochs to train (default: 14)')
 
     ## may need to do CV for this
-    parser.add_argument('--lr', type=float, default=0.4, metavar='LR',
-                        help='learning rate (default: 0.4)')
+    parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
+                        help='learning rate (default: 1.0)')
 
     ## may need to do CV for this
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
@@ -139,8 +139,8 @@ def main():
     parser.add_argument('--log-interval', type=int, default=2, metavar='N',
                         help='how many batches to wait before logging training status')
     ## may want to do this when submitting multi-node jobs for cross-val
-    parser.add_argument('--save-net', action='store_true', default=False,
-                        help='For Saving the current net')
+    parser.add_argument('--save-model', action='store_true', default=False,
+                        help='For Saving the current Model')
     parser.add_argument('--step-size', type = int, default = 1, metavar = 'SS',
                        help = 'StepLR scheduler step')
     ######### CUSTOM args
@@ -229,15 +229,15 @@ def main():
     # set architecture from bash script call
     net = ResNet(chosenArch[0], chosenArch[1], num_classes=1)
     
-    net = net.to(device)
-    print(summary(net, input_size=(1, 224, 224)))
+    model = net.to(device)
+    print(summary(model, input_size=(1, 224, 224)))
     net = net.double()
     
     ############ TRYING PARALLEL GPU WORK #####################
     if torch.cuda.device_count() > 1:
       print("Let's use", torch.cuda.device_count(), "GPUs!")
       # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-      net = torch.nn.DataParallel(net)
+      model = torch.nn.DataParallel(net)
     ############################################################
     
     
@@ -251,7 +251,7 @@ def main():
     chosenOpti = optimList[0]
 
 
-    optimizer = optim.SGD(net.parameters(), lr=args.lr)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr)
 
     # change this to multistep after initial training
     # at each iteration the lr is multiplied by args.gamma (=0.7)
@@ -263,8 +263,8 @@ def main():
     trainLossBatch = pd.DataFrame(columns=["epoch", "batchNum", "Train Loss"])
     print("Starting training :) \n\n")
     for epoch in range(1, args.epochs + 1):
-        train_loss, lossPerBatch = train(args, net, device, train_loader, optimizer, epoch)
-        test_loss = test(args, net, device, test_loader)
+        train_loss, lossPerBatch = train(args, model, device, train_loader, optimizer, epoch)
+        test_loss = test(args, model, device, test_loader)
         
         
         ######### WE ARE NOT USING VISDOM FOR NOW
@@ -285,8 +285,8 @@ def main():
         scheduler.step()
         #scheduler.step(test_loss) # if using ReduceLROnPlateau scheduler or another that requires this
         
-    if args.save_net:
-        torch.save(net.state_dict(), "HtoA.pt")
+    if args.save_model:
+        torch.save(model.state_dict(), "HtoA.pt")
 
     Loss_monitor.to_csv("Results/05stepLRTrainTestLoss"+str(args.step_size)+".csv")
     trainLossBatch.to_csv("Results/05stepLRLossPBatch"+str(args.step_size)+".csv")
