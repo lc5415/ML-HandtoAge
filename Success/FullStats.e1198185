@@ -1,0 +1,30 @@
+Traceback (most recent call last):
+  File "<stdin>", line 25, in <module>
+  File "/rds/general/user/lc5415/home/ML-HtoA/Scripts/LoadImages.py", line 286, in getData
+    Loader = Load(DATASET, batch_size = batch_size, plot = plot)
+  File "/rds/general/user/lc5415/home/ML-HtoA/Scripts/LoadImages.py", line 226, in Load
+    for i_batch, (image, age, sex) in enumerate(dataloader):
+  File "/rds/general/user/lc5415/home/anaconda3/lib/python3.7/site-packages/torch/utils/data/dataloader.py", line 345, in __next__
+    data = self._next_data()
+  File "/rds/general/user/lc5415/home/anaconda3/lib/python3.7/site-packages/torch/utils/data/dataloader.py", line 856, in _next_data
+    return self._process_data(data)
+  File "/rds/general/user/lc5415/home/anaconda3/lib/python3.7/site-packages/torch/utils/data/dataloader.py", line 881, in _process_data
+    data.reraise()
+  File "/rds/general/user/lc5415/home/anaconda3/lib/python3.7/site-packages/torch/_utils.py", line 394, in reraise
+    raise self.exc_type(msg)
+RuntimeError: Caught RuntimeError in DataLoader worker process 0.
+Original Traceback (most recent call last):
+  File "/rds/general/user/lc5415/home/anaconda3/lib/python3.7/site-packages/torch/utils/data/_utils/worker.py", line 178, in _worker_loop
+    data = fetcher.fetch(index)
+  File "/rds/general/user/lc5415/home/anaconda3/lib/python3.7/site-packages/torch/utils/data/_utils/fetch.py", line 47, in fetch
+    return self.collate_fn(data)
+  File "/rds/general/user/lc5415/home/anaconda3/lib/python3.7/site-packages/torch/utils/data/_utils/collate.py", line 79, in default_collate
+    return [default_collate(samples) for samples in transposed]
+  File "/rds/general/user/lc5415/home/anaconda3/lib/python3.7/site-packages/torch/utils/data/_utils/collate.py", line 79, in <listcomp>
+    return [default_collate(samples) for samples in transposed]
+  File "/rds/general/user/lc5415/home/anaconda3/lib/python3.7/site-packages/torch/utils/data/_utils/collate.py", line 64, in default_collate
+    return default_collate([torch.as_tensor(b) for b in batch])
+  File "/rds/general/user/lc5415/home/anaconda3/lib/python3.7/site-packages/torch/utils/data/_utils/collate.py", line 55, in default_collate
+    return torch.stack(batch, 0, out=out)
+RuntimeError: invalid argument 0: Sizes of tensors must match except in dimension 0. Got 1578 and 1107 in dimension 1 at /pytorch/aten/src/TH/generic/THTensor.cpp:612
+
