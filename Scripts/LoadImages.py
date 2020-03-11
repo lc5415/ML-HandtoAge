@@ -11,9 +11,9 @@ import multiprocessing
 import time
 import torchvision.utils as utils
 try: 
-    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor, CenterCrop, Normalize
+    from Scripts.MyTransforms import *
 except:
-    from MyTransforms import Rescale, RandomCrop, ToTensor, CenterCrop, Normalize
+    from MyTransforms import *
 plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
 
 
@@ -75,26 +75,6 @@ class HandDataset(Dataset):
         if self.transform:
             # transform with transform that was given to the function
             sample = self.transform(sample)
-        if self.clahe:
-            image = sample['image']
-            image = np.array(np.transpose(image, (1,2,0)))
-            image = np.uint8(cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX))
-            claheTrans = cv2.createCLAHE(clipLimit = 2.0, tileGridSize = (8,8))
-            image = claheTrans.apply(image)
-            image = image[:, :, np.newaxis]
-            image = torch.from_numpy(image.transpose((2, 0, 1)))
-            image = image.double()
-            # return transformed image
-            sample = {'image': image, 'age': age, 'sex': sex}
-        if self.normalise:
-            """IN is hard coded at the moment which may not be ideal """
-            # Instance Normalization
-            image = sample['image']
-            # mean, std = torch.mean(image), torch.std(image)
-            # image = (image - mean) / std
-            image = (image - image.mean())/(image.max()-image.min())
-            # return transformed image
-            sample = {'image': image, 'age': age, 'sex': sex}
 
         # if self.outputs == 1:
         #     sample = {'image': image, 'age': age}
@@ -260,7 +240,7 @@ def Load(dataset, batch_size = 20, plot = 0):
     return dataloader
 
 def getData(image_directory, labels_directory, transform = None,
-            normalise = True, clahe = False,  plot = 0, batch_size = 20, save = 0, savename = ""):
+            plot = 0, batch_size = 20, save = 0, savename = ""):
     """Example: --getting all the data
     dataload = LoadImages.getData("labelled/train/",
 ...                           "boneage-training-dataset.csv",
@@ -294,7 +274,7 @@ def getData(image_directory, labels_directory, transform = None,
     DATASET = HandDataset(labels_indices,
                           data_labels,
                           image_directory,
-                          transform= transform, normalise = normalise, clahe = clahe)
+                          transform= transform)
 
     if plot != 0:
         DATASET.plot_n_images()
@@ -342,8 +322,10 @@ if __name__ == "__main__":
                                   [Rescale(256),
                                    # RandomCrop(224),
                                    CenterCrop(224),
+                                   CHALE(),
+                                   InstanceNorm(),
                                    ToTensor(),
                                    #Normalize([0.2011], [0.1847])
-                                   ]), batch_size=20, normalise=False, clahe=True, plot = 1)
+                                   ]), batch_size=20, plot = 1)
     # mean_full, std_full = FullBatchStats(data)
     print(time.time()-st)
