@@ -109,7 +109,7 @@ class HandDataset(Dataset):
         plt.imshow(img)
         plt.show()
 
-    def plot_n_images(self, n_images=20):
+    def plot_n_images(self, n_images=9):
         """
         This image will give you a matplotlib subplot of n images
         from a torch Dataset, given a bunch of indices
@@ -126,7 +126,7 @@ class HandDataset(Dataset):
 
             # sample = self.__getitem__(img_id)
             # img = sample['image'] # dictionary version
-            img, age, _ = self.__getitem__(img_id)
+            img, age, sex = self.__getitem__(img_id)
 
             # standard input size is [1,224,224] when transformed, as this is torch preferred
             # input format, line below is transposing to [224,224,1]
@@ -134,19 +134,25 @@ class HandDataset(Dataset):
                 img = np.transpose(img, (1, 2, 0))
             # this line is reshaping the tensor from [224,224,1] to [224,224]
             img = img.reshape((img.shape[0], img.shape[1]))
-            ax = plt.subplot(4, 5, k + 1)
+            ax = plt.subplot(3, 3, k + 1)
+            # plh = np.zeros(n_images)
+            # plh = plh.reshape([int(np.ceil(np.sqrt(n_images))),-1])
+            # ax = plt.subplot(plh.shape[0], plh.shape[1], k+1)
             plt.imshow(img)
-            plt.tight_layout()
+            plt.axis('off')
             # set title as age
-            ax.set_title(f"{np.array(age)/12}")
+            age_out = float((np.array(age) / 12))
+            ax.set_title(f"{age_out:.2f}, {'male' if sex == 1 else 'female'}")
 
         if img.shape[0] == img.shape[1]:
             all_axes = fig.get_axes()
             for ax in all_axes:
                 ax.label_outer()
+        #plt.tight_layout()
         plt.show()
+        return fig
 
-    def n_histograms(self, n_images=20):
+    def n_histograms(self, n_images=9):
         """
         This image will give you a matplotlib subplot of n images
         from a torch Dataset, given a bunch of indices
@@ -169,10 +175,15 @@ class HandDataset(Dataset):
                 img = np.transpose(img, (1, 2, 0))
             # this line is reshaping the tensor from [224,224,1] to [224,224]
             img = img.reshape((img.shape[0], img.shape[1]))
-            ax = plt.subplot(4, 5, k + 1)
-            plt.hist(img.flatten())
-            img_mean = torch.mean(img)
-            img_median = torch.median(img)
+            ax = plt.subplot(3, 3, k + 1)
+            plt.grid()
+            plt.hist(img.flatten(), edgecolor = 'black')
+            try:
+                img_mean = torch.mean(img)
+                img_median = torch.median(img)
+            except:
+                img_mean = img.mean()
+                img_median = np.median(img)
             plt.axvline(img_mean,
                         color='g',
                         linestyle='dashed',
@@ -192,6 +203,7 @@ class HandDataset(Dataset):
         for ax in all_axes:
             ax.label_outer()
         plt.show()
+        return fig
 
 def Load(dataset, batch_size = 20, plot = 0):
     '''Given an object of the class torch.utils.data.Dataset this function
@@ -218,6 +230,9 @@ def Load(dataset, batch_size = 20, plot = 0):
 
         grid = utils.make_grid(images_batch, nrow= int(np.ceil(np.sqrt(images_batch.shape[0]))) )
         plt.imshow(grid.numpy().transpose((1, 2, 0)))
+        plt.show()
+        grid2 = utils.make_grid(images_batch, nrow=int(np.ceil(np.sqrt(images_batch.shape[0]))))
+        plt.hist(grid2.numpy().transpose((1, 2, 0)).flatten())
         plt.show()
 
     for i_batch, (image, age, sex) in enumerate(dataloader):

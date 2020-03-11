@@ -72,6 +72,7 @@ plt.scatter(image_size[:, 0], image_size[:, 1])
 plt.title("Varying image size across dataset")
 plt.xlabel("'Row' pixels")
 plt.ylabel("'Column' pixels")
+plt.grid()
 plt.show()
 
 from skimage.io import imread
@@ -89,6 +90,7 @@ axs[1].hist(img_centered.flatten(), bins = 256)
 axs[1].set_title('Centered')
 axs[2].hist(img_normalised.flatten(), bins = 256)
 axs[2].set_title('Centered+Scaled')
+axs[0].grid();axs[1].grid();axs[2].grid()
 plt.show()
 
 fig, axs = plt.subplots(1, 3)
@@ -99,4 +101,5 @@ axs[1].set_title('Centered')
 axs[2].imshow(img_normalised)
 axs[2].set_title('Centered+Scaled')
 plt.show()
+
 
