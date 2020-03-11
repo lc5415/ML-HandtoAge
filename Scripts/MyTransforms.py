@@ -1,6 +1,8 @@
 from skimage import transform
 import numpy as np
 import torch
+from torchvision.transforms import Normalize as tchNormalize
+import cv2
 
 class Rescale(object):
     """Rescale the image in a image to a given size.
@@ -110,7 +112,62 @@ class ToTensor(object):
         # torch image: C X H X W
         image = sample['image']
         image = image.transpose((2, 0, 1))
-        return {'image': torch.from_numpy(image),
+        try:
+            return {'image': torch.from_numpy(image).double(),
+                'age': torch.from_numpy(sample['age']),
+                'sex': torch.from_numpy(sample['sex'])}
+        except:
+            return {'image': torch.from_numpy(image),
                 'age': torch.from_numpy(sample['age']),
                 'sex': torch.from_numpy(sample['sex'])}
 
+class Normalize(object):
+    """Just adapting the normalise function to my case"""
+
+    def __init__(self, mean_in, std_in):
+        self.mean = mean_in
+        self.std = std_in
+        self.Normal = tchNormalize(mean_in, std_in)
+
+    def __call__(self, sample):
+        image = sample['image']
+        norm_im = self.Normal(tensor=image)
+        return {'image': norm_im, 'age': sample['age'], 'sex': sample['sex']}
+
+class CHALE(object):
+
+    def __init__(self, clipLimit=2.0, tileGridSize=(8, 8)):
+        self.clipLimit = clipLimit
+        self.tileGridSize = tileGridSize
+        self.CHALE = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+
+    def __call__(self, sample):
+        image = sample['image']
+        image = np.uint8(cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX))
+        image = self.CHALE.apply(image)
+        image = image[:, :, np.newaxis]
+        #image = image.double()
+        # return transformed image
+        return {'image': image, 'age': sample['age'], 'sex': sample['sex']}
+
+class InstanceNorm(object):
+
+    def __init__(self, kind = 'meannorm'):
+        """kind possible inputs are meannorm for mean normalisation or minmax
+        or standard for standardisation"""
+        self.kind = kind
+    def __call__(self, sample):
+        # Instance Normalization
+        image = sample['image']
+        if self.kind == "meannorm":
+            image = (image - image.mean()) / (image.max() - image.min())
+        elif self.kind == "minmax":
+            image = (image - image.min()) / (image.max() - image.min())
+        elif self.kind == "standard":
+            mean, std = image.mean(), image.std()
+            image = (image - mean) / std
+        else:
+            print("Sorry wrong input, please check the source code")
+            raise
+        # return transformed image
+        return {'image': image, 'age': sample['age'], 'sex': sample['sex']}

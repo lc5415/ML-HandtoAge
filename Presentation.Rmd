@@ -1,0 +1,121 @@
+---
+title: "Machine Learning Project - Hand-To-Age ($H_2A$)"
+author: "Luis Chaves"
+date: "10/03/2020"
+institute: "MSc Health Data Analytics & Machine Learning"
+output: 
+  beamer_presentation:
+    theme: "Marburg"
+    slide_level: 2
+outertheme: sidebar
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(root.dir = "/Users/luischavesrodriguez/OneDrive\ -\ Imperial\ College\ London/MScHDA/Term2/ML/ML-HandtoAge")
+library(ggplot2)
+library(tidyverse)
+library(scales)
+library(ggpubr)
+```
+
+# Project description
+## Data
+__Data source:__ Radiology Society of North America(RSNA) and Radiology Informatics Committee (RIC). Available in Kaggle. Images gathered by several 
+
+__Dataset:__ 12,621 images of individuals aged between 1 month and 19 years (228 months) old. Gender and age available for all fo them.
+
+__Context:__ Images gathered for the Pediatric Bone Age ML Challenge.
+
+## Aim(s) of my study
+
+> __Supervised question \#1:__ How close can we estimate age from images only?
+
+> __Supervised question \#2:__ Can gender be derived from the image?
+
+> __Unsupervised question:__ Can clustering algorithm accurately group together individuals by gender
+
+## Population statistics
+```{r}
+info = read.csv("boneage-training-dataset.csv")
+dens.per.sex = info %>% ggplot(aes(boneage, fill = male))+geom_density(alpha = 0.7)+scale_fill_brewer(palette = "Accent", name = "Gender", labels = c("Female", "Male"))+theme_minimal()+ggtitle("Age distribution by gender")+ylab("Density")+xlab("Age (in months)")+theme(text=element_text(size=21))
+
+
+blank_theme = theme_minimal()+theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.border = element_blank(),
+  panel.grid=element_blank(),
+  axis.ticks = element_blank(),
+  plot.title=element_text(size=8, face="bold")
+  )
+
+pie = info %>% group_by(male) %>% 
+  summarise(Proportion = n()/nrow(info)) %>% 
+  ggplot(aes(x="", y=Proportion, fill=male))+
+  geom_bar(width = 1, stat = "identity", show.legend = F)+coord_polar("y", start = 0)+
+  geom_text(aes(y = Proportion/2 +
+                  c(0, cumsum(Proportion)[-length(Proportion)]), 
+                label = percent((1-Proportion)/100)), size=9)+blank_theme+theme(axis.text.x=element_blank())+scale_fill_brewer(palette = "Accent", name = "Gender", labels = c("Female", "Male"))
+
+dens.per.sex+annotation_custom(ggplotGrob(pie), xmin = -150, ymin = 0.005)
+
+
+
+```
+
+## The images
+X-ray images of each individuals' hand (one or two - information not available)
+
+* Difficulties:  
+    + Varying resolution (plot)  
+    + Varying contrast  
+    + Some scanned and some digital images  
+    
+* Advantages:  
+    + Standardised medical images 
+
+Let's have a look at some pictures!
+
+## Raw Images
+
+# Methods: Deep Learning for Computer Vision
+
+## Data processing 
+### Data split
+10,000 Images for training, 2611 for testing/validation, no cross-validation because of computational cost and large amount of training data. Overfitting dealt with by regularisation
+
+### Image processing
+* Rescaled and Center Cropped Images:
+* Centering and scaling features (pixel values)
+* Contrast adjustment
+
+## Network of choice: ResNet
+
+## Hyperparameter tuning
+
+* Learning rate $\alpha$
+* Optimizer: __SGD__, Adam
+* Learning rate scheduler: StepLR, Exponential LR, ReduceONPlateauLR, __CyclicLR__
+* Image normalisation: batch vs instance
+* Networks' depth (\# of layers): 18, 34 and 50 layer-deep ResNets
+* Regularisation: L2-regularisation
+
+## Unsupervised Learning
+
+### Umap and K-means
+
+# Results
+
+# Slide with R Output
+## POTATO
+```{r cars, echo = TRUE}
+summary(cars)
+```
+
+## Slide with Plot
+
+```{r pressure}
+plot(pressure)
+```
+
