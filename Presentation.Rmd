@@ -77,6 +77,36 @@ X-ray images of each individuals' hand (one or two - information not available)
 
 Let's have a look at some pictures!
 
+## Raw Images
+
+# Methods: Deep Learning for Computer Vision
+
+## Data processing 
+### Data split
+10,000 Images for training, 2611 for testing/validation, no cross-validation because of computational cost and large amount of training data. Overfitting dealt with by regularisation
+
+### Image processing
+* Rescaled and Center Cropped Images:
+* Centering and scaling features (pixel values)
+* Contrast adjustment
+
+## Network of choice: ResNet
+
+## Hyperparameter tuning
+
+* Learning rate $\alpha$
+* Optimizer: __SGD__, Adam
+* Learning rate scheduler: StepLR, Exponential LR, ReduceONPlateauLR, __CyclicLR__
+* Image normalisation: batch vs instance
+* Networks' depth (\# of layers): 18, 34 and 50 layer-deep ResNets
+* Regularisation: L2-regularisation
+
+## Unsupervised Learning
+
+### Umap and K-means
+
+# Results
+
 # Slide with R Output
 ## POTATO
 ```{r cars, echo = TRUE}

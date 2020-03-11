@@ -142,7 +142,7 @@ class HandDataset(Dataset):
             plt.axis('off')
             # set title as age
             age_out = float((np.array(age) / 12))
-            ax.set_title(f"{age_out:.2f}, {'male' if sex == 1 else 'female'}")
+            #ax.set_title(f"{age_out:.2f}, {'male' if sex == 1 else 'female'}")
 
         if img.shape[0] == img.shape[1]:
             all_axes = fig.get_axes()

@@ -112,7 +112,12 @@ class ToTensor(object):
         # torch image: C X H X W
         image = sample['image']
         image = image.transpose((2, 0, 1))
-        return {'image': torch.from_numpy(image).double(),
+        try:
+            return {'image': torch.from_numpy(image).double(),
+                'age': torch.from_numpy(sample['age']),
+                'sex': torch.from_numpy(sample['sex'])}
+        except:
+            return {'image': torch.from_numpy(image),
                 'age': torch.from_numpy(sample['age']),
                 'sex': torch.from_numpy(sample['sex'])}
 
@@ -150,7 +155,7 @@ class InstanceNorm(object):
     def __init__(self, kind = 'meannorm'):
         """kind possible inputs are meannorm for mean normalisation or minmax
         or standard for standardisation"""
-        self.kind = 'meannorm'
+        self.kind = kind
     def __call__(self, sample):
         # Instance Normalization
         image = sample['image']
@@ -159,10 +164,10 @@ class InstanceNorm(object):
         elif self.kind == "minmax":
             image = (image - image.min()) / (image.max() - image.min())
         elif self.kind == "standard":
-            mean, std = torch.mean(image), torch.std(image)
+            mean, std = image.mean(), image.std()
             image = (image - mean) / std
         else:
-            print("Sorry wrong input, please check the documentation")
+            print("Sorry wrong input, please check the source code")
             raise
         # return transformed image
         return {'image': image, 'age': sample['age'], 'sex': sample['sex']}
