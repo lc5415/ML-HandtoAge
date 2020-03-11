@@ -87,31 +87,9 @@ RawData = getData("labelled/train",
                           "boneage-training-dataset.csv",
                           transform=transforms.Compose(
                                   [Rescale(256),
-                                   # RandomCrop(224),
                                    CenterCrop(224),
-                                   # InstanceNorm(),
-                                   ToTensor(),
-                                   InstanceNorm(kind = "standard")]),
+                                    InstanceNorm(),
+
+                                   ToTensor()]),
                                     batch_size=20, plot = 1)
 
-RawData = getData("labelled/train",
-                          "boneage-training-dataset.csv",
-                          transform=transforms.Compose(
-                                  [Rescale(256),
-                                   # RandomCrop(224),
-                                   CenterCrop(224),
-                                   # InstanceNorm(),
-                                   ToTensor(),
-                                   InstanceNorm(kind = "minmax")]),
-                                    batch_size=20, plot = 1)
-
-RawData = getData("labelled/train",
-                          "boneage-training-dataset.csv",
-                          transform=transforms.Compose(
-                                  [Rescale(256),
-                                   # RandomCrop(224),
-                                   CenterCrop(224),
-                                   # InstanceNorm(),
-                                   ToTensor(),
-                                   InstanceNorm()]),
-                                    batch_size=20, plot = 1)

@@ -75,6 +75,8 @@ if use_cuda:
                                [Rescale(256),
                                 # RandomCrop(224),
                                 CenterCrop(224),
+                                CHALE(),
+                                InstanceNorm(),
                                 ToTensor()
                                 ]),
                            batch_size=128, normalise=True, plot=0, save=0)
@@ -85,6 +87,8 @@ if use_cuda:
                               [Rescale(256),
                                # RandomCrop(224),
                                CenterCrop(224),
+                               CHALE(),
+                               InstanceNorm(),
                                ToTensor()
                                ]),
                           batch_size=500, normalise=True, plot=0, save=0)
@@ -97,6 +101,8 @@ else:
                                [Rescale(256),
                                 # RandomCrop(224),
                                 CenterCrop(224),
+                                CHALE(),
+                                InstanceNorm(),
                                 ToTensor()
                                 ]),
                            plot=0, batch_size=8)
@@ -107,6 +113,8 @@ else:
                               [Rescale(256),
                                # RandomCrop(224),
                                CenterCrop(224),
+                               CHALE(),
+                               InstanceNorm(),
                                ToTensor()
                                ]),
                           plot=0, batch_size=10)
@@ -128,7 +136,7 @@ logs, losses = find_lr()
 
 results = {'lr':logs, 'loss':losses}
 results = pd.DataFrame(results)
-results.to_csv("Results/OptimLR.csv")
+results.to_csv("Results/CHALEOptimLR.csv")
 #plt.plot(logs[10:-5], losses[10:-5])
 print("Optimization finished.")
 # learner = Learner(bunch, net, metrics = mae)
