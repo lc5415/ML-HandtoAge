@@ -75,9 +75,11 @@ if use_cuda:
                                [Rescale(256),
                                 # RandomCrop(224),
                                 CenterCrop(224),
+                                CHALE(),
+                                InstanceNorm(),
                                 ToTensor()
                                 ]),
-                           batch_size=128, normalise=True, plot=0, save=0)
+                           batch_size=128, plot=0, save=0)
 
     test_loader = getData("FULLdata/test",
                           "boneage-training-dataset.csv",
@@ -85,9 +87,11 @@ if use_cuda:
                               [Rescale(256),
                                # RandomCrop(224),
                                CenterCrop(224),
+                               CHALE(),
+                               InstanceNorm(),
                                ToTensor()
                                ]),
-                          batch_size=500, normalise=True, plot=0, save=0)
+                          batch_size=500, plot=0, save=0)
 
 else:
     ## LOAD DATA -- on the fly
@@ -97,6 +101,8 @@ else:
                                [Rescale(256),
                                 # RandomCrop(224),
                                 CenterCrop(224),
+                                CHALE(),
+                                InstanceNorm(),
                                 ToTensor()
                                 ]),
                            plot=0, batch_size=8)
@@ -107,6 +113,8 @@ else:
                               [Rescale(256),
                                # RandomCrop(224),
                                CenterCrop(224),
+                               CHALE(),
+                               InstanceNorm(),
                                ToTensor()
                                ]),
                           plot=0, batch_size=10)
@@ -126,9 +134,9 @@ criterion = F.l1_loss
 print("Starting learning rate optimization:")
 logs, losses = find_lr()
 
-results = {lr=logs, loss=losses}
+results = {'lr':logs, 'loss':losses}
 results = pd.DataFrame(results)
-results.to_csv("Results/OptimLR.csv")
+results.to_csv("Results/CHALEOptimLR.csv")
 #plt.plot(logs[10:-5], losses[10:-5])
 print("Optimization finished.")
 # learner = Learner(bunch, net, metrics = mae)

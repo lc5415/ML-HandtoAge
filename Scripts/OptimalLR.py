@@ -79,7 +79,7 @@ if use_cuda:
                                 InstanceNorm(),
                                 ToTensor()
                                 ]),
-                           batch_size=128, normalise=True, plot=0, save=0)
+                           batch_size=128, plot=0, save=0)
 
     test_loader = getData("FULLdata/test",
                           "boneage-training-dataset.csv",
@@ -91,7 +91,7 @@ if use_cuda:
                                InstanceNorm(),
                                ToTensor()
                                ]),
-                          batch_size=500, normalise=True, plot=0, save=0)
+                          batch_size=500, plot=0, save=0)
 
 else:
     ## LOAD DATA -- on the fly
