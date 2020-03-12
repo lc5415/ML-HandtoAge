@@ -128,7 +128,7 @@ print("You are using a "+str(device))
 net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes = 1)
 net = net.double()
 net = net.to(device)
-optimizer = optim.SGD(net.parameters(),lr=1e-1)
+optimizer = optim.SGD(net.parameters(),lr=1e-1, weight_decay = 0.0001)
 criterion = F.l1_loss
 
 print("Starting learning rate optimization:")
@@ -136,7 +136,7 @@ logs, losses = find_lr()
 
 results = {'lr':logs, 'loss':losses}
 results = pd.DataFrame(results)
-results.to_csv("Results/CHALEOptimLR.csv")
+results.to_csv("Results/00001CHALEOptimLR.csv")
 #plt.plot(logs[10:-5], losses[10:-5])
 print("Optimization finished.")
 # learner = Learner(bunch, net, metrics = mae)
