@@ -1,7 +1,7 @@
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
-
+import argparse
 import pandas as pd
 
 import math
@@ -120,7 +120,14 @@ else:
                           plot=0, batch_size=10)
 
 print("Success! Data loaded\n")
-
+############################################################################
+parser = argparse.ArgumentParser(description='LR Range test by S. Gugger')
+parser.add_argument('-wd','--weight-decay', type=float, default=0, metavar='LR',
+                    help='weight decay (default: 0)')
+parser.add_argument('-fn', '--filename', help = 'filename including format')
+args = parser.parse_args()
+print(args)
+############################################################################
 
 device = torch.device("cuda" if use_cuda else "cpu")
 print("You are using a "+str(device))
@@ -128,7 +135,7 @@ print("You are using a "+str(device))
 net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes = 1)
 net = net.double()
 net = net.to(device)
-optimizer = optim.SGD(net.parameters(),lr=1e-1, weight_decay = 0.0001)
+optimizer = optim.SGD(net.parameters(),lr=1e-1, weight_decay = args.weight_decay)
 criterion = F.l1_loss
 
 print("Starting learning rate optimization:")
@@ -136,7 +143,7 @@ logs, losses = find_lr()
 
 results = {'lr':logs, 'loss':losses}
 results = pd.DataFrame(results)
-results.to_csv("Results/00001CHALEOptimLR.csv")
+results.to_csv("Results/"+args.filename)
 #plt.plot(logs[10:-5], losses[10:-5])
 print("Optimization finished.")
 # learner = Learner(bunch, net, metrics = mae)
