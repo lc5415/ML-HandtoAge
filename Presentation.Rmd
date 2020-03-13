@@ -8,6 +8,8 @@ output:
     theme: "Marburg"
     slide_level: 2
 outertheme: sidebar
+bibliography: h2a.bib
+biblio-style: apalike
 ---
 
 ```{r setup, include=FALSE}
@@ -70,6 +72,7 @@ X-ray images of each individuals' hand (one or two - information not available)
 * Difficulties:  
     + Varying resolution (plot)  
     + Varying contrast  
+    + Varying exposure
     + Some scanned and some digital images  
     
 * Advantages:  
@@ -79,16 +82,46 @@ Let's have a look at some pictures!
 
 ## Raw Images
 
+![](Images/notitleRawImagesGrid.png "Raw images from the dataset")
+
+## Raw Images
+
+![](Images/RawImagesGrid.png "Raw images with their labels")
+
 # Methods: Deep Learning for Computer Vision
 
 ## Data processing 
 ### Data split
-10,000 Images for training, 2611 for testing/validation, no cross-validation because of computational cost and large amount of training data. Overfitting dealt with by regularisation
+10,000 Images for training, 2611 for testing/validation, no cross-validation because of computational cost and large amount of training data.
 
 ### Image processing
 * Rescaled and Center Cropped Images:
 * Centering and scaling features (pixel values)
 * Contrast adjustment
+
+## Image processing & Feature engineering (1/3)
+
+Large disparity in image resolution therefore need to make all images same size. Default for many network architectures is 224x224 so that is our choice! Could be increased for likely better results at higher computational cost
+
+
+## Image processing & Feature engineering (2/3)
+
+It is widely recommended to normalise the inputs of a neural networks as this will speed up training by gradient descent. 
+Several forms of normalisation: Instance Normalisation(IN) and Batch Normalisation(BN):
+
+* IN: Center and scale each image w.r.t. its mean and standard deviation.
+* BN: Center and scale each image w.r.t. the whole batch of images mean and standard deviation
+
+> The (instance) normalization process allows to remove instance-specific contrast information from the content image [see @Smith2015]
+
+## Image processing & Feature engineering
+
+![](Images/CenterandScale.png){width=70%}![](labelled/train/1468.png){width=30%}
+
+## Image processing & Feature engineering
+
+![](Images/CentScaleOne.png){width=70%}![](labelled/train/1468.png){width=30%}
+
 
 ## Network of choice: ResNet
 
@@ -96,10 +129,42 @@ Let's have a look at some pictures!
 
 * Learning rate $\alpha$
 * Optimizer: __SGD__, Adam
-* Learning rate scheduler: StepLR, Exponential LR, ReduceONPlateauLR, __CyclicLR__
+* Learning rate scheduler: StepLR, Exponential LR, ReduceONPlateauLR, __CyclicLR__, __OneCycle Policy__
 * Image normalisation: batch vs instance
 * Networks' depth (\# of layers): 18, 34 and 50 layer-deep ResNets
 * Regularisation: L2-regularisation
+
+## Exponentially growing possibilites
+
+The 'Caviar' approach: training many many models with different hyperparameters, seeing which one does best. I tried:
+
+* Varying ResNet Depth: 18, 34, 50 layers.
+    + IN, $\alpha$ = 1,ExponentialLR schedule, $\gamma$ = 0.7, ADAM optimizer, no weight decay
+* Changing LR schedule: ReduceOnPlateau, StepLR with different $\gamma$ (0.1 and 0.5) and stepsize (1,4,9,16,25).
+* __Moving into smarter ideas:__ CyclicLR, LR Range finder and One cycle policy.
+
+
+## Results 1, varying depth
+
+```{r}
+res18 = read_csv('Results/TrainTestLoss1.csv')
+res34 = read_csv('Results/TrainTestLoss2.csv')
+res50 = read_csv('Results/TrainTestLoss3.csv')
+
+pBatch18 = read_csv('Results/LossPBatch1.csv')
+pBatch34 = read_csv('Results/LossPBatch2.csv')
+pBatch50 = read_csv('Results/LossPBatch3.csv')
+
+res18$X1 = res34$X1 = res50$X1 = res18$X1+1
+colnames(res18)[1] = colnames(res34)[1] = colnames(res50)[1] = "Epoch"
+
+results = rbind(cbind(res18, Depth = "18"),
+                cbind(res34, Depth = "34"),
+                cbind(res50, Depth = "50"))
+
+results %>% pivot_longer(-c(Epoch, Depth), names_to = "Loss", values_to = "MAE") %>%
+  ggplot(aes(x = Epoch, y = MAE, color = Depth, group = Loss))+geom_line(aes(linetype = Loss))+facet_wrap(~Depth)+ylim(0,60)+theme_pubclean()
+```
 
 ## Unsupervised Learning
 

@@ -4,6 +4,7 @@ import re
 import matplotlib.pyplot as plt
 from skimage import io
 import numpy as np
+import seaborn as sns
 from scipy.stats import mode
 import cv2
 from torchvision import models
@@ -83,15 +84,22 @@ img = imread("labelled/train/1468.png")
 img_centered = img-img.mean()
 img_normalised = (img-img.mean())/img.std()
 
-fig, axs = plt.subplots(3, sharex=True)
+fig, axs = plt.subplots(4, sharex=True)
 axs[0].hist(img.flatten(), bins = 256)
 axs[0].set_title('original')
 axs[1].hist(img_centered.flatten(), bins = 256)
 axs[1].set_title('Centered')
 axs[2].hist(img_normalised.flatten(), bins = 256)
 axs[2].set_title('Centered+Scaled')
+axs[2].set_xlim([-50,250])
 axs[0].grid();axs[1].grid();axs[2].grid()
 plt.show()
+
+plt.hist(img_normalised.flatten(), bins = 256)
+plt.title('Centered+Scaled')
+plt.savefig('Images/CentScaleOne.png')
+plt.show()
+
 
 fig, axs = plt.subplots(1, 3)
 axs[0].imshow(img)
@@ -101,5 +109,6 @@ axs[1].set_title('Centered')
 axs[2].imshow(img_normalised)
 axs[2].set_title('Centered+Scaled')
 plt.show()
+
 
 
