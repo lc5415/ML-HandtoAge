@@ -2,24 +2,25 @@ import torch
 from torchvision import transforms, utils
 import pandas as pd
 import os, re
+import cv2
 from torch.utils.data import Dataset, DataLoader
 from skimage import io, transform
 import matplotlib.pyplot as plt
 import numpy as np
 import multiprocessing
+import time
 import torchvision.utils as utils
 try: 
-    from Scripts.MyTransforms import Rescale, RandomCrop, ToTensor
+    from Scripts.MyTransforms import *
 except:
-    from MyTransforms import Rescale, RandomCrop, ToTensor
-from torchvision.transforms import Normalize
+    from MyTransforms import *
 plt.rcParams['image.cmap'] = 'gray' # set default colormap to gray
 
 
 class HandDataset(Dataset):
     """Hand labels dataset."""
 
-    def __init__(self, pandas_df, data_labels, root_dir, transform=None, normalise = True):
+    def __init__(self, pandas_df, data_labels, root_dir, transform=None, normalise = True, clahe = True, outputs = 1):
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -38,6 +39,8 @@ class HandDataset(Dataset):
         # pass whatever transform you'd like to apply to the data
         self.transform = transform
         self.normalise = normalise
+        self.clahe = clahe
+        self.outputs = 1 # number of outputs to spit
 
     def __len__(self):
         # return number of indices in this dataset (aka, number of images in whole dataset)
@@ -72,26 +75,20 @@ class HandDataset(Dataset):
         if self.transform:
             # transform with transform that was given to the function
             sample = self.transform(sample)
-        if self.normalise:
-            """IN is hard coded at the moment which may not be ideal """
-            # Instance Normalization
-            image = sample['image']
-            mean, std = torch.mean(image), torch.std(image)
-            image = (image - mean) / std
-            # return transformed image
-            sample = {'image': image, 'age': age, 'sex': sex}
 
-
-
-        return sample
+        # if self.outputs == 1:
+        #     sample = {'image': image, 'age': age}
+        image, age, sex = sample['image'], sample['age'], sample['sex']
+        return image, age, sex # sample
 
     def plot_img(self, idx):
 
         """If transforms has been applied this will plot the transformed images"""
 
         # get sample with given id and retrieve the image from there
-        img = self.__getitem__(idx)['image']
+        img, _, _ = self.__getitem__(idx)
 
+        #img = self.__getitem__(idx)['image'] # dictionary version
         # If a transform was applied reorder the image so that it can be plotted
         if self.transform:
             img = np.transpose(img, (1, 2, 0))
@@ -112,7 +109,7 @@ class HandDataset(Dataset):
         plt.imshow(img)
         plt.show()
 
-    def plot_n_images(self, n_images=20):
+    def plot_n_images(self, n_images=9):
         """
         This image will give you a matplotlib subplot of n images
         from a torch Dataset, given a bunch of indices
@@ -127,8 +124,9 @@ class HandDataset(Dataset):
                                                      len(self.labels_index),
                                                      n_images)):
 
-            sample = self.__getitem__(img_id)
-            img = sample['image']
+            # sample = self.__getitem__(img_id)
+            # img = sample['image'] # dictionary version
+            img, age, sex = self.__getitem__(img_id)
 
             # standard input size is [1,224,224] when transformed, as this is torch preferred
             # input format, line below is transposing to [224,224,1]
@@ -136,19 +134,25 @@ class HandDataset(Dataset):
                 img = np.transpose(img, (1, 2, 0))
             # this line is reshaping the tensor from [224,224,1] to [224,224]
             img = img.reshape((img.shape[0], img.shape[1]))
-            ax = plt.subplot(4, 5, k + 1)
+            ax = plt.subplot(3, 3, k + 1)
+            # plh = np.zeros(n_images)
+            # plh = plh.reshape([int(np.ceil(np.sqrt(n_images))),-1])
+            # ax = plt.subplot(plh.shape[0], plh.shape[1], k+1)
             plt.imshow(img)
-            plt.tight_layout()
+            plt.axis('off')
             # set title as age
-            ax.set_title(f"{np.array(sample['age'])/12}")
+            age_out = float((np.array(age) / 12))
+            #ax.set_title(f"{age_out:.2f}, {'male' if sex == 1 else 'female'}")
 
         if img.shape[0] == img.shape[1]:
             all_axes = fig.get_axes()
             for ax in all_axes:
                 ax.label_outer()
+        #plt.tight_layout()
         plt.show()
+        return fig
 
-    def n_histograms(self, n_images=20):
+    def n_histograms(self, n_images=9):
         """
         This image will give you a matplotlib subplot of n images
         from a torch Dataset, given a bunch of indices
@@ -162,17 +166,24 @@ class HandDataset(Dataset):
         for k, img_id in enumerate(np.random.randint(0,
                                                      len(self.labels_index),
                                                      n_images)):
-            img = self.__getitem__(img_id)['image']
+            # img = self.__getitem__(img_id)['image']
+            img, _, _ = self.__getitem__(img_id)
+
             # standard input size is [1,224,224] when transformed, as this is torch preferred
             # input format, line below is transposing to [224,224,1]
             if self.transform:
                 img = np.transpose(img, (1, 2, 0))
             # this line is reshaping the tensor from [224,224,1] to [224,224]
             img = img.reshape((img.shape[0], img.shape[1]))
-            ax = plt.subplot(4, 5, k + 1)
-            plt.hist(img.flatten())
-            img_mean = torch.mean(img)
-            img_median = torch.median(img)
+            ax = plt.subplot(3, 3, k + 1)
+            plt.grid()
+            plt.hist(img.flatten(), edgecolor = 'black')
+            try:
+                img_mean = torch.mean(img)
+                img_median = torch.median(img)
+            except:
+                img_mean = img.mean()
+                img_median = np.median(img)
             plt.axvline(img_mean,
                         color='g',
                         linestyle='dashed',
@@ -192,6 +203,7 @@ class HandDataset(Dataset):
         for ax in all_axes:
             ax.label_outer()
         plt.show()
+        return fig
 
 def Load(dataset, batch_size = 20, plot = 0):
     '''Given an object of the class torch.utils.data.Dataset this function
@@ -207,26 +219,34 @@ def Load(dataset, batch_size = 20, plot = 0):
         batch_size = dataset.labels_index.shape[0]
 
     dataloader = DataLoader(dataset, batch_size=batch_size,
-                            shuffle=True, num_workers=cores, drop_last = True)
+                            shuffle=False, num_workers=0, drop_last = True)
 
     def show_batch(sample_batched):
         """Show image with landmarks for a batch of samples."""
-        images_batch = sample_batched['image']
+        if image.max() > 1:
+            images_batch = image/255
+        else:
+            images_batch = image
 
         grid = utils.make_grid(images_batch, nrow= int(np.ceil(np.sqrt(images_batch.shape[0]))) )
         plt.imshow(grid.numpy().transpose((1, 2, 0)))
         plt.show()
+        grid2 = utils.make_grid(images_batch, nrow=int(np.ceil(np.sqrt(images_batch.shape[0]))))
+        plt.hist(grid2.numpy().transpose((1, 2, 0)).flatten())
+        plt.show()
 
-    for i_batch, sample_batched in enumerate(dataloader):
+    for i_batch, (image, age, sex) in enumerate(dataloader):
 
-        print(i_batch, sample_batched['image'].size(),
-              sample_batched['age'].size(),
-              sample_batched['sex'].size())
+        # print(i_batch),
+        #       sample_batched['image'].size(),
+        #       sample_batched['age'].size()),
+        #       sample_batched['sex'].size()) # dictionary version
+        print(i_batch, image.size(), age.size(), sex.size())
 
         # observe 4th batch and stop.
         if i_batch == len(dataloader)-1 and plot != 0: # dataloader.batch_size - 1:
             plt.figure()
-            show_batch(sample_batched)
+            show_batch(image)
             plt.axis('off')
             plt.ioff()
             plt.show()
@@ -235,7 +255,7 @@ def Load(dataset, batch_size = 20, plot = 0):
     return dataloader
 
 def getData(image_directory, labels_directory, transform = None,
-            normalise = True, plot = 0, batch_size = 20, save = 0, savename = ""):
+            plot = 0, batch_size = 20, save = 0, savename = ""):
     """Example: --getting all the data
     dataload = LoadImages.getData("labelled/train/",
 ...                           "boneage-training-dataset.csv",
@@ -269,7 +289,7 @@ def getData(image_directory, labels_directory, transform = None,
     DATASET = HandDataset(labels_indices,
                           data_labels,
                           image_directory,
-                          transform= transform, normalise = normalise)
+                          transform= transform)
 
     if plot != 0:
         DATASET.plot_n_images()
@@ -287,25 +307,40 @@ def FullBatchStats(dataloaded):
     will return the dataloader statistics (mean and std)"""
 
     if len(dataloaded) == 1:
-        for id, batch in enumerate(dataloaded):
-            b_mean, b_std = batch['image'].mean(), batch['image'].std()
+        # for id, batch in enumerate(dataloaded):
+        #     b_mean, b_std = batch['image'].mean(), batch['image'].std()
+        for id, (image, _, _) in enumerate(dataloaded):
+            b_mean, b_std = image.mean(), image.std()
 
     else:
-        b_all = []
-        for id, batch in enumerate(dataloaded):
-            b_all.append(batch['image'].flatten())
-        b_mean = b_all.mean()
-        b_std = b_all.std()
+        b_all, num_el = 0, 0
+        # for id, batch in enumerate(dataloaded):
+        #     b_all.append(batch['image'].flatten())
+        for _, (image, _, _) in enumerate(dataloaded):
+            b_all += image.flatten().sum()
+            num_el += np.array(image.flatten().shape)
+        b_mean = b_all/num_el
+        b_all = 0
+        for _, (image, _, _) in enumerate(dataloaded):
+            b_all += ((image.flatten()-b_mean)**2).sum()
+        b_std = (b_all/num_el).sqrt()
 
     return b_mean, b_std
 
 
 # SAMPLE CODE
-# if __name__ == "__main__":
-#     data = getData("labelled/train",
-#                           "boneage-training-dataset.csv",
-#                           transform=transforms.Compose(
-#                                   [Rescale(256),
-#                                    RandomCrop(224),
-#                                    ToTensor()
-#                                    ]), batch_size="full", normalise=True, plot = 1)
+if __name__ == "__main__":
+    st = time.time()
+    data = getData("labelled/train",
+                          "boneage-training-dataset.csv",
+                          transform=transforms.Compose(
+                                  [Rescale(256),
+                                   # RandomCrop(224),
+                                   CenterCrop(224),
+                                   CHALE(),
+                                   InstanceNorm(),
+                                   ToTensor(),
+                                   #Normalize([0.2011], [0.1847])
+                                   ]), batch_size=20, plot = 1)
+    # mean_full, std_full = FullBatchStats(data)
+    print(time.time()-st)
