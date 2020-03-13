@@ -146,6 +146,9 @@ def main():
     ######### CUSTOM args
     parser.add_argument('--arch', type = int, default = 1,
                            help = 'ResNet architecture choice')
+    parser.add_argument('-wd','--weight-decay', type = float, default = 0,
+                           help = 'Weight decay (L2 norm)')
+    parser.add_argument('-rf', '--resfile', default='Results', help = "Results filename")
     args = parser.parse_args()
     
     
@@ -159,16 +162,11 @@ def main():
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
     print(args)
-    
-    
-    # loading premade dataloaders
+
     # trainloader has a batch size of 128 and testLoader has full size (2611 images)
     print("Your working directory is {}\n".format(os.getcwd()))
     print("Loading data...")
     if use_cuda:
-#         train_loader = test_loader = DataLoader()
-#         train_loader = torch.load("FULLdata/trainLoaded.pt")
-#         test_loader = torch.load("FULLdata/testLoaded.pt")
         train_loader = getData("FULLdata/training",
                                "boneage-training-dataset.csv",
                                transform = transforms.Compose(
@@ -237,27 +235,22 @@ def main():
     if torch.cuda.device_count() > 1:
       print("Let's use", torch.cuda.device_count(), "GPUs!")
       # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-      model = torch.nn.DataParallel(net)
+      net = torch.nn.DataParallel(net)
     ############################################################
-    
-    
 
     print("You have loaded a ResNet with {} blocks and {} layers".format(str(chosenArch[0]), str(chosenArch[1])))
-sav
     ####################### LEFT IT HERE #################
-    optimList = [optim.Adam,
-                  optim.SGD]
 
-    chosenOpti = optimList[0]
-
-
-    optimizer = optim.SGD(net.parameters(), lr=args.lr)
+    optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay = args.weight_decay)
 
     # change this to multistep after initial training
     # at each iteration the lr is multiplied by args.gamma (=0.7)
     #scheduler = ReduceLROnPlateau(optimizer, factor = 0.25, patience = 5)
     # scheduler = StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
-    scheduler = CyclicLR(optimizer, base_lr = 0.02, max_lr = 0.4)
+    # scheduler = CyclicLR(optimizer, base_lr = 0.02, max_lr = 0.4)
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.01,
+                                                    steps_per_epoch=len(train_loader),
+                                                    epochs=args.epoch)
 
     Loss_monitor = pd.DataFrame(columns=["Train loss", "Test loss"])
     trainLossBatch = pd.DataFrame(columns=["epoch", "batchNum", "Train Loss"])
@@ -265,20 +258,6 @@ sav
     for epoch in range(1, args.epochs + 1):
         train_loss, lossPerBatch = train(args, net, device, train_loader, optimizer, epoch)
         test_loss = test(args, net, device, test_loader)
-        
-        
-        ######### WE ARE NOT USING VISDOM FOR NOW
-#         # plot loss to visdom object
-#         viz.line(X = np.array([epoch]),
-#                  Y = np.array([train_loss.cpu().detach().numpy() if use_cuda else train_loss]),
-#                  win="Train", update = "append",
-#                  opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
-
-#         # plot loss to visdom object
-#         viz.line(X=np.array([epoch]),
-#                  Y=np.array([test_loss]),
-#                  win="Test", update="append",
-#                 opts=dict(xlabel='Epochs', ylabel='Loss', title='Training Loss', legend=['Loss']))
 
         Loss_monitor.loc[len(Loss_monitor)] = [train_loss, test_loss]
         trainLossBatch = trainLossBatch.append(lossPerBatch, ignore_index = True)
@@ -288,11 +267,8 @@ sav
     if args.save_net:
         torch.save(net.state_dict(), "HtoA.pt")
 
-    Loss_monitor.to_csv("Results/05stepLRTrainTestLoss"+str(args.step_size)+".csv")
-    trainLossBatch.to_csv("Results/05stepLRLossPBatch"+str(args.step_size)+".csv")
-    
+    Loss_monitor.to_csv("Results/"+ args.resfile +"TrainTest.csv")
+    trainLossBatch.to_csv("Results/"+args.resfile+"RLossPBatch.csv")
 
 if __name__ == "__main__":
-    # NOT USING VISDOM FOR NOW
-    # viz = visdom.Visdom(port = 8097)
     main()
