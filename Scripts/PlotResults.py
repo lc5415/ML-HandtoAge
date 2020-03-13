@@ -20,3 +20,8 @@ plt.xscale('symlog')
 plt.grid(True, which='both')
 plt.semilogx(optimising["lr"], optimising["loss"])
 plt.show()
+
+### OPTIMISATION WITH CHALE FOR 1-CYCLE
+
+
+

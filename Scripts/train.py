@@ -139,13 +139,8 @@ def main():
     parser.add_argument('--log-interval', type=int, default=2, metavar='N',
                         help='how many batches to wait before logging training status')
     ## may want to do this when submitting multi-node jobs for cross-val
-<<<<<<< HEAD
     parser.add_argument('--save-net', action='store_true', default=False,
                         help='For Saving the current net')
-=======
-    parser.add_argument('--save-model', action='store_true', default=False,
-                        help='For Saving the current Model')
->>>>>>> 57325e6... setting up cyclir LR and changing all model to net
     parser.add_argument('--step-size', type = int, default = 1, metavar = 'SS',
                        help = 'StepLR scheduler step')
     ######### CUSTOM args
@@ -182,7 +177,7 @@ def main():
                                    CenterCrop(224),
                                    ToTensor()
                                    ]),
-                               batch_size=args.batch_size, normalise=True, plot = 0, save = 0)
+                               batch_size=args.batch_size, plot = 0, save = 0)
 
         test_loader = getData("FULLdata/test",
                               "boneage-training-dataset.csv",
@@ -192,7 +187,7 @@ def main():
                                     CenterCrop(224),
                                     ToTensor()
                                     ]),
-                               batch_size=args.test_batch_size, normalise=True, plot = 0, save = 0)
+                               batch_size=args.test_batch_size, plot = 0, save = 0)
         
     else:
     ## LOAD DATA -- on the fly
@@ -248,7 +243,7 @@ def main():
     
 
     print("You have loaded a ResNet with {} blocks and {} layers".format(str(chosenArch[0]), str(chosenArch[1])))
-
+sav
     ####################### LEFT IT HERE #################
     optimList = [optim.Adam,
                   optim.SGD]

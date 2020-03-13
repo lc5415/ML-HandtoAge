@@ -83,13 +83,13 @@ fig2 = DATASET.n_histograms()
 #
 # #### histogram visualisation
 #
-RawData = getData("labelled/train",
-                          "boneage-training-dataset.csv",
-                          transform=transforms.Compose(
-                                  [Rescale(256),
-                                   CenterCrop(224),
-                                    InstanceNorm(),
-
-                                   ToTensor()]),
-                                    batch_size=20, plot = 1)
+# RawData = getData("labelled/train",
+#                           "boneage-training-dataset.csv",
+#                           transform=transforms.Compose(
+#                                   [Rescale(256),
+#                                    CenterCrop(224),
+#                                    CHALE(),
+#                                    InstanceNorm(),
+#                                    ToTensor()]),
+#                                     batch_size=20, plot = 1)
 
