@@ -34,6 +34,8 @@ training_labels_indices = list(training_labels_indices)
 
 use_cuda = cuda.is_available()
 
+print("You are using a {}".format("cuda" if use_cuda else "cpu"))
+
 # preprocessing images
 if platform.system() == 'Linux':
     train_loader = getData("FULLdata/training",
@@ -46,7 +48,7 @@ if platform.system() == 'Linux':
                                 InstanceNorm(),
                                 ToTensor()
                                 ]),
-                           batch_size=args.batch_size, plot=0, save=0)
+                           batch_size="full", plot=0, save=0)
 
     test_loader = getData("FULLdata/test",
                           "boneage-training-dataset.csv",
@@ -58,7 +60,7 @@ if platform.system() == 'Linux':
                                InstanceNorm(),
                                ToTensor()
                                ]),
-                          batch_size=args.test_batch_size, plot=0, save=0)
+                          batch_size="full", plot=0, save=0)
 
 else:
     ## LOAD DATA -- on the fly
