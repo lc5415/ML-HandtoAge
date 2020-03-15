@@ -169,7 +169,7 @@ results %>% pivot_longer(-c(Epoch, Depth), names_to = "Loss", values_to = "MAE")
   ggplot(aes(x = Epoch, y = MAE, color = Depth))+
   geom_line(aes(linetype = Loss))+facet_wrap(~Depth)+
   ylim(0,60)+theme_pubclean()+
-  scale_color_brewer(palette = "Set1")+
+  scale_color_brewer(palette = "Paired")+
   ggtitle("Training curves for different ResNet depths and an exponential LR schedule")+
   geom_text(data = LastTest, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
             hjust= -1, vjust = -1, show.legend = F, fontface=2)+
@@ -206,7 +206,7 @@ LastTraing1 = res %>% group_by(StepSize) %>% summarise(LastValue = last(Train.lo
 
 g1 = res %>% pivot_longer(-c(Epoch, StepSize), names_to = "Loss", values_to = "MAE") %>%
   ggplot(aes(x = Epoch, y= MAE, color = StepSize))+geom_line(aes(linetype = Loss))+
-  facet_wrap(~StepSize)+theme_pubclean()+scale_color_brewer(palette = "Set1")+
+  facet_wrap(~StepSize)+theme_pubclean()+scale_color_brewer(palette = "Paired")+
   geom_text(data = LastTestg1, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
             hjust= -4, vjust = -10, show.legend = F, fontface = 2)+
   geom_text(data = LastTraing1, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
@@ -216,7 +216,7 @@ g1 = res %>% pivot_longer(-c(Epoch, StepSize), names_to = "Loss", values_to = "M
 g2 = res %>% group_by(StepSize) %>% summarise(MinTrain = min(Train.loss), MinTest = min(Test.loss)) %>%
   pivot_longer(-StepSize, names_to = "Loss", values_to = "Min.MAE") %>%
   ggplot(aes(x = StepSize, y= Min.MAE, color = Loss, group = Loss))+geom_line()+
-  geom_point(aes(x = StepSize, y = Min.MAE, color = Loss))+scale_color_brewer(palette = "Set1")+
+  geom_point(aes(x = StepSize, y = Min.MAE, color = Loss))+scale_color_brewer(palette = "Paired")+
   theme_pubclean()
 
 
@@ -228,7 +228,7 @@ g1
 
 ## Exploring the bias-variance tradoff
 ```{r}
-g2+ggtitle("Minimum MAE against hyperparameter value choice")+theme_pubclean()+scale_color_brewer(palette = "Set1")
+g2+ggtitle("Minimum MAE against hyperparameter value choice")+theme_pubclean()+scale_color_brewer(palette = "Paired")
 ```
 
 ## Instead of fixed learning rate changes, reduce on pleateau
@@ -247,7 +247,7 @@ redOnP %>% pivot_longer(-c(Epoch), names_to = "Loss", values_to = "MAE") %>%
   ggplot(aes(x = Epoch, y = MAE))+
   geom_path(aes(linetype = Loss))+
   ylim(0,60)+theme_minimal()+
-  scale_color_brewer(palette = "Set1")+
+  scale_color_brewer(palette = "Paired")+
   ggtitle("Training curves with a 'Reduce On Plateau' LR schedule")+
   geom_text(data = LastTest, aes(x=-Inf, y = -Inf, label=round(LastValue,2)), hjust= -12, vjust = -20, show.legend = F)+
   geom_text(data = LastTrain, aes(x=-Inf, y = -Inf, label=round(LastValue,2)), hjust= -16, vjust = -16, show.legend = F,
@@ -325,30 +325,76 @@ CLRrun %>% pivot_longer(-c(Epoch), names_to = "Loss", values_to = "MAE") %>%
   ggplot(aes(x = Epoch, y = MAE))+
   geom_path(aes(linetype = Loss))+
   ylim(0,60)+theme_minimal()+
-  scale_color_brewer(palette = "Set1")+
+  scale_color_brewer(palette = "Paired")+
   ggtitle("Training curves with a 'Reduce On Plateau' LR schedule")+
-  geom_text(data = LastTest, aes(x=-Inf, y = -Inf, label=round(LastValue,2)), hjust= -12, vjust = -20, show.legend = F)+
+  geom_text(data = LastTest, aes(x=-Inf, y = -Inf, label=round(LastValue,2)), hjust= -12, vjust = -20, show.legend = F, fontface = 2)+
   geom_text(data = LastTrain, aes(x=-Inf, y = -Inf, label=round(LastValue,2)), hjust= -16, vjust = -16, show.legend = F,
-            fontface = 2)
+            fontface = 1)
 ```
 
 ## Incorporating CHALE and the OneCycle policy
+Incroproating CHALE for shaper images as well as regularisation L2 norm and OneCyclePolicy
+```{r}
+CHALEOptiLR0 = read.csv("Results/0CHALEOptLR.csv") # no regularisation
+CHALEOptiLR01 = read.csv("Results/01CHALEOptLR.csv")
+CHALEOptiLR001 = read.csv("Results/001CHALEOptLR.csv")
+CHALEOptiLR0001 = read.csv("Results/0001CHALEOptLR.csv")
+CHALEOptiLR00001 = read.csv("Results/00001CHALEOptLR.csv")
 
-## Unsupervised Learning
 
-### Umap and K-means
+minIter = 30
+len = nrow(CHALEOptiLR0)
+optiRes = rbind(cbind(CHALEOptiLR0[minIter:len,-1], Lambda = 0),
+                cbind(CHALEOptiLR01[minIter:len,-1], Lambda = 0.1),
+                cbind(CHALEOptiLR001[minIter:len,-1], Lambda = 0.01),
+                cbind(CHALEOptiLR0001[minIter:len,-1], Lambda = 0.001),
+                cbind(CHALEOptiLR00001[minIter:len,-1], Lambda = 0.0001))
+
+optiRes$lr = 10^(optiRes$lr)
+optiRes$Lambda = as.factor(optiRes$Lambda)
+
+optiRes %>% ggplot(aes(x = lr, y = loss, color = Lambda))+
+  geom_line()+
+  scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
+              labels = trans_format("log10", math_format(10^.x)),
+              minor_breaks = minor_breaks)+
+  annotation_logticks(sides="b")+theme_minimal()+
+  scale_color_brewer(palette = "Paired")
+
+# max = 2*10^-1
+
+```
+
+## Incorporating CHALE and the OneCycle policy
+Incroproating CHALE for shaper images as well as regularisation L2 norm and OneCyclePolicy
+```{r}
+optiRes %>% filter(Lambda == 0.001) %>% ggplot(aes(x = lr, y = loss, color = Lambda))+
+  geom_line()+
+  scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
+              labels = trans_format("log10", math_format(10^.x)),
+              minor_breaks = minor_breaks)+
+  annotation_logticks(sides="b")+theme_minimal()+
+  scale_color_brewer(palette = "Paired")
+```
+
+## Results from 1-Cycle Policy with CHALE
+
+...A work in progress?
+```{r}
+
+```
+
+
+# Unsupervised Learning
+## Unsupervised learning for clustering by gender
+## Unsupervised learning for image compression 
+## Unsupervised learning for image segmentation (proof of concept)
+
+# Limitations and further work
+
+* Turning regression problem into classification by binning individuals into age groups
+* Trying different neural net architectures, especially simpler ones
+* Deep learning clustering methods such as VAE and t-SNE
+* 
 
 # Results
-
-# Slide with R Output
-## POTATO
-```{r cars, echo = TRUE}
-summary(cars)
-```
-
-## Slide with Plot
-
-```{r pressure}
-plot(pressure)
-```
-
