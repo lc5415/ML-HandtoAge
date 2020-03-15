@@ -24,7 +24,7 @@ training_labels = pd.read_csv("boneage-training-dataset.csv")
 
 
 if platform.system() == 'Linux':
-    img_path = "../FULLdata/training/"
+    img_path = "FULLdata/training/"
 else:
     img_path = "labelled/train/"  # "../FULLdata/training/" #
 

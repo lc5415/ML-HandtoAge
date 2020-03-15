@@ -130,7 +130,7 @@ def main():
                         help='learning rate (default: 0.4)')
 
     ## may need to do CV for this
-    parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
+    parser.add_argument('--gamma', type=float, default=0.1, metavar='M',
                         help='Learning rate step gamma (default: 0.7)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
@@ -249,16 +249,16 @@ def main():
     print("You have loaded a ResNet with {} blocks and {} layers".format(str(chosenArch[0]), str(chosenArch[1])))
     ####################### LEFT IT HERE #################
 
-    optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay = args.weight_decay, momentum = 0.9)
-
+#     optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay = args.weight_decay, momentum = 0.9)
+    optimizer = optim.Adam(net.parameters(), lr = 0.2, weight_decay = args.weight_decay)
     # change this to multistep after initial training
     # at each iteration the lr is multiplied by args.gamma (=0.7)
     #scheduler = ReduceLROnPlateau(optimizer, factor = 0.25, patience = 5)
-    # scheduler = StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
+    scheduler = StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
     # scheduler = CyclicLR(optimizer, base_lr = 0.02, max_lr = 0.4)
-    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.2,
-                                                    steps_per_epoch=len(train_loader),
-                                                    epochs=args.epochs)
+    #scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.2,
+#                                                     steps_per_epoch=len(train_loader),
+#                                                     epochs=args.epochs)
 
     Loss_monitor = pd.DataFrame(columns=["Train loss", "Test loss"])
     trainLossBatch = pd.DataFrame(columns=["epoch", "batchNum", "Train Loss"])
