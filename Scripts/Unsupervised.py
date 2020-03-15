@@ -35,7 +35,7 @@ training_labels_indices = list(training_labels_indices)
 use_cuda = cuda.is_available()
 
 # preprocessing images
-if use_cuda:
+if platform.system() == 'Linux':
     train_loader = getData("FULLdata/training",
                            "boneage-training-dataset.csv",
                            transform=transforms.Compose(
@@ -169,7 +169,7 @@ plt.show()
 ##PCA for image compression down here
 
 # preprocessing images
-if use_cuda:
+if platform.system() == 'Linux':
     train_loader = getData("FULLdata/training",
                            "boneage-training-dataset.csv",
                            transform=transforms.Compose(
