@@ -7,8 +7,8 @@ from skimage import io
 from sklearn.metrics import confusion_matrix
 import torch
 from sklearn.decomposition import PCA, KernelPCA
-import seaborn as sns
 import matplotlib.pyplot as plt
+import platform
 
 try:
     from Scripts.MyResNet import ResNet, BasicBlock, Bottleneck
