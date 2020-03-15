@@ -258,7 +258,7 @@ def main():
     # scheduler = CyclicLR(optimizer, base_lr = 0.02, max_lr = 0.4)
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.2,
                                                     steps_per_epoch=len(train_loader),
-                                                    epochs=args.epoch)
+                                                    epochs=args.epochs)
 
     Loss_monitor = pd.DataFrame(columns=["Train loss", "Test loss"])
     trainLossBatch = pd.DataFrame(columns=["epoch", "batchNum", "Train Loss"])
