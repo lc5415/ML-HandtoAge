@@ -10,6 +10,9 @@ output:
 outertheme: sidebar
 bibliography: h2a.bib
 biblio-style: apalike
+link-citations: yes
+header-includes:
+  - \usepackage{wrapfig}
 ---
 
 ```{r setup, include=FALSE}
@@ -33,9 +36,11 @@ __Context:__ Images gathered for the Pediatric Bone Age ML Challenge.
 
 > __Supervised question \#1:__ How close can we estimate age from images only?
 
-> __Supervised question \#2:__ Can gender be derived from the image?
+> __Unsupervised question\#1:__ Can clustering algorithm accurately group together individuals by gender
 
-> __Unsupervised question:__ Can clustering algorithm accurately group together individuals by gender
+> __Unsupervised question\#2:__ Unsupervised learning for out-of-the-box applications in computer vision
+
+> __(Appendix) Supervised question \#2:__ Can gender be derived from the image?
 
 ## Population statistics
 ```{r}
@@ -70,7 +75,7 @@ dens.per.sex+annotation_custom(ggplotGrob(pie), xmin = -150, ymin = 0.005)
 X-ray images of each individuals' hand (one or two - information not available)
 
 * Difficulties:  
-    + Varying resolution (plot)  
+    + Varying resolution
     + Varying contrast  
     + Varying exposure
     + Some scanned and some digital images  
@@ -88,42 +93,93 @@ Let's have a look at some pictures!
 
 ![](Images/RawImagesGrid.png "Raw images with their labels")
 
-# Methods: Deep Learning for Computer Vision
+# Image processing & Feature engineering
 
 ## Data processing 
 ### Data split
 10,000 Images for training, 2611 for testing/validation, no cross-validation because of computational cost and large amount of training data.
 
-### Image processing
-* Rescaled and Center Cropped Images:
+### Image processing overview
+* Rescaled and Center Cropped Images
 * Centering and scaling features (pixel values)
 * Contrast adjustment
 
-## Image processing & Feature engineering (1/3)
+## Large disparity in image resolution
 
-Large disparity in image resolution therefore need to make all images same size. Default for many network architectures is 224x224 so that is our choice! Could be increased for likely better results at higher computational cost
+__Default for many network architectures is 224x224__ so that is our choice!
+```{r}
+res.all = read.csv("Results/ResolutionTrainingImages.csv")
+
+res.all = res.all[,-1]
+colnames(res.all) = c("# of height pixels", "# of width pixels")
+scatt = res.all %>% ggplot(aes(`# of height pixels`, `# of width pixels`))+geom_point(alpha = 0.3)+theme_minimal()+
+  scale_color_brewer(palette = "Paired")+geom_vline(xintercept = mean(res.all$`# of height pixels`), linetype = 2)+
+  geom_hline(yintercept = mean(res.all$`# of width pixels`), linetype = 2)+
+  theme(text=element_text(size=21))
 
 
-## Image processing & Feature engineering (2/3)
+hist1 = res.all %>% ggplot(aes(`# of height pixels`))+geom_density()+theme_minimal()+scale_color_brewer(palette = "Paired")+
+  geom_vline(xintercept = mean(res.all$`# of height pixels`), linetype = 2)+
+  theme(text=element_text(size=21), axis.title.x = element_blank(), axis.text.x = element_blank())
 
-It is widely recommended to normalise the inputs of a neural networks as this will speed up training by gradient descent. 
+
+hist2 = res.all %>% ggplot(aes(`# of width pixels`))+geom_density()+geom_vline(xintercept = mean(res.all$`# of width pixels`), linetype = 2)+scale_y_continuous(breaks = c(0,0.001
+                                                                                                                                                                           ), labels = waiver())+coord_flip()+theme_minimal()+scale_color_brewer(palette = "Paired")+
+  # scale_x_continuous(limits = c(0, 0.001))+
+  theme(text=element_text(size=21), axis.title.y = element_blank(), axis.text.y = element_blank())
+
+fig = ggarrange(hist1, NULL, scatt, hist2, nrow = 2, ncol = 2, widths = c(2,1), heights = c(1,2), align = "hv")
+
+annotate_figure(fig, top = text_grob("Distribution of image resolution in training set", face="bold", size = 14))
+
+```
+
+
+## Rescaling and cropping
+
+![](Images/ScaleCropImagesGrid.png)
+
+## Centering and scaling
+
+It is widely recommended to center and scale the inputs of a neural networks as this will speed up training by gradient descent (see notes from CS231n Stanford).\
 Several forms of normalisation: Instance Normalisation(IN) and Batch Normalisation(BN):
 
-* IN: Center and scale each image w.r.t. its mean and standard deviation.
-* BN: Center and scale each image w.r.t. the whole batch of images mean and standard deviation
+* __IN: Center and scale each image w.r.t. its mean and standard deviation.__
+* __BN: Center and scale each image w.r.t. the whole batch of images mean and standard deviation__
 
-> The (instance) normalization process allows to remove instance-specific contrast information from the content image [see @Smith2015]
-
-## Image processing & Feature engineering
+## Centering and scaling
 
 ![](Images/CenterandScale.png){width=70%}![](labelled/train/1468.png){width=30%}
 
-## Image processing & Feature engineering
+## Centering and scaling
 
 ![](Images/CentScaleOne.png){width=70%}![](labelled/train/1468.png){width=30%}
 
+Until further noticed all results from neural networks come from images centered with the mean and scaled with the standard deviation.
+
+Note! where images have low exposure, most normalised pixel value will become negative and clipped to 0 when plotted!
+
+## For reference, images look like this
+
+![](Images/ImgGridRESCALEDCROPPEd.png)
+
+# Deep Learning for Computer Vision
+## Network of choice: ResNet
+
+\begin{wrapfigure}{R}{.5\textwidth}  
+\begin{center}
+    \includegraphics[width=0.45\textwidth]{Images/ResnetBlock.png}  
+\end{center}
+\end{wrapfigure}
+
+Residual networks were introduced by reserachers at Microsoft in 2015 (see @Hea). They represented a breaktrough at the time because they allow to train deeper network with an added trick which added no cost to the training computationally.\
+ResNets are made of blocks such as the one below:
 
 ## Network of choice: ResNet
+
+Residual networks were introduced by reserachers at Microsoft in 2015 (see @Hea). They represented a breaktrough at the time because they allow to train deeper network with an added trick which added no cost to the training computationally.\
+Looking at the overall architecture it looks like this:
+![](Images/Resnet18arch.png)
 
 ## Hyperparameter tuning
 
@@ -133,6 +189,14 @@ Several forms of normalisation: Instance Normalisation(IN) and Batch Normalisati
 * Image normalisation: batch vs instance
 * Networks' depth (\# of layers): 18, 34 and 50 layer-deep ResNets
 * Regularisation: L2-regularisation
+
+## Hyperparameter tuning
+
+* Learning rate $\alpha$
+* Optimizer: __SGD__, Adam, Adagrad, AdaDelta, AdamW, SGD with momentum...
+* Learning rate scheduler: StepLR, Exponential LR, ReduceONPlateauLR, __CyclicLR__, __OneCycle Policy__
+
+> "This ($\alpha$) is often the single most important hyperparameter and one should always make sure that it has been tuned" (see Neural Networks: Tricks of the Trade - 2012)
 
 ## Exponentially growing possibilites
 
@@ -144,7 +208,7 @@ The 'Caviar' approach: training many many models with different hyperparameters,
 * __Moving into smarter ideas:__ CyclicLR, LR Range finder and One cycle policy.
 
 
-## Results 1, varying depth
+## Deeper network does not lead to better results
 
 ```{r}
 res18 = read_csv('Results/TrainTestLoss1.csv')
@@ -167,21 +231,21 @@ LastTrain = results %>% group_by(Depth) %>% summarise(LastValue = last(`Train lo
 
 results %>% pivot_longer(-c(Epoch, Depth), names_to = "Loss", values_to = "MAE") %>%
   ggplot(aes(x = Epoch, y = MAE, color = Depth))+
-  geom_line(aes(linetype = Loss))+facet_wrap(~Depth)+
+  geom_line(aes(linetype = Loss), size = 1.5)+facet_wrap(~Depth)+
   ylim(0,60)+theme_pubclean()+
   scale_color_brewer(palette = "Paired")+
-  ggtitle("Training curves for different ResNet depths and an exponential LR schedule")+
+  ggtitle("Training curves for different ResNet depths")+
   geom_text(data = LastTest, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
-            hjust= -1, vjust = -1, show.legend = F, fontface=2)+
+            hjust= -2, vjust = -7, show.legend = F, fontface=2, size = 10)+
   geom_text(data = LastTrain, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
-            hjust= -1, vjust = -1, show.legend = F,fontface = 1, size = 10)+
+            hjust= -2, vjust = -5, show.legend = F,fontface = 1, size = 10)+
   theme(text=element_text(size=21))
 
 
 ```
 
-## Results 2, varying LR scheduler
-
+## Varying step-size leads to different results
+Optimizer: SGD (before Adam), $\gamma$ = 0.5
 ```{r}
 ## Step LR
 # formsart SLR(StepLR).SS(StepSize).gamma(div factor)
@@ -205,86 +269,71 @@ LastTestg1 = res %>% group_by(StepSize) %>% summarise(LastValue = last(Test.loss
 LastTraing1 = res %>% group_by(StepSize) %>% summarise(LastValue = last(Train.loss))
 
 g1 = res %>% pivot_longer(-c(Epoch, StepSize), names_to = "Loss", values_to = "MAE") %>%
-  ggplot(aes(x = Epoch, y= MAE, color = StepSize))+geom_line(aes(linetype = Loss))+
+  ggplot(aes(x = Epoch, y= MAE, color = StepSize))+geom_line(aes(linetype = Loss), size = 1.5)+
   facet_wrap(~StepSize)+theme_pubclean()+scale_color_brewer(palette = "Paired")+
   geom_text(data = LastTestg1, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
-            hjust= -4, vjust = -10, show.legend = F, fontface = 2)+
+            hjust= -2, vjust = -7, show.legend = F, fontface = 2, size = 10)+
   geom_text(data = LastTraing1, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
-            hjust= -4, vjust = -6, show.legend = F, fontface = 1)
+            hjust= -2, vjust = -5, show.legend = F, fontface = 1, size =10)+ylim(0,60)
 
 
 g2 = res %>% group_by(StepSize) %>% summarise(MinTrain = min(Train.loss), MinTest = min(Test.loss)) %>%
   pivot_longer(-StepSize, names_to = "Loss", values_to = "Min.MAE") %>%
-  ggplot(aes(x = StepSize, y= Min.MAE, color = Loss, group = Loss))+geom_line()+
-  geom_point(aes(x = StepSize, y = Min.MAE, color = Loss))+scale_color_brewer(palette = "Paired")+
+  ggplot(aes(x = StepSize, y= Min.MAE, color = Loss, group = Loss))+geom_line(size = 1.5)+
+  geom_point(aes(x = StepSize, y = Min.MAE, color = Loss), size = 3)+scale_color_brewer(palette = "Paired")+
   theme_pubclean()
 
 
 
-g1
+g1+theme(text=element_text(size=21))
 
 ```
 
 
 ## Exploring the bias-variance tradoff
 ```{r}
-g2+ggtitle("Minimum MAE against hyperparameter value choice")+theme_pubclean()+scale_color_brewer(palette = "Paired")
+g2+ggtitle("Minimum MAE against hyperparameter value choice")+theme_pubclean()+scale_color_brewer(palette = "Paired")+theme(text=element_text(size=21))
 ```
-
-## Instead of fixed learning rate changes, reduce on pleateau
-
-Goign for a slightly smarter choice 
-```{r}
-redOnP = read.csv("Results/RedOnPlateauTrainTestLoss1.csv")
-
-redOnP$X = redOnP$X+1
-colnames(redOnP)[1] = "Epoch"
-
-LastTest = redOnP %>% summarise(LastValue = last(Test.loss))
-LastTrain = redOnP %>% summarise(LastValue = last(Train.loss))
-
-redOnP %>% pivot_longer(-c(Epoch), names_to = "Loss", values_to = "MAE") %>%
-  ggplot(aes(x = Epoch, y = MAE))+
-  geom_path(aes(linetype = Loss))+
-  ylim(0,60)+theme_minimal()+
-  scale_color_brewer(palette = "Paired")+
-  ggtitle("Training curves with a 'Reduce On Plateau' LR schedule")+
-  geom_text(data = LastTest, aes(x=-Inf, y = -Inf, label=round(LastValue,2)), hjust= -12, vjust = -20, show.legend = F)+
-  geom_text(data = LastTrain, aes(x=-Inf, y = -Inf, label=round(LastValue,2)), hjust= -16, vjust = -16, show.legend = F,
-            fontface = 2)
-
-
-```
-
 
 ## Challenging conventional wisdom
 ### Cyclic Learning Rates and One-Cycle Policy
-Leslie Smith challenged conventional wisdon on deep learning optimisation when he presented his work on Cyclic Learning Rates and the One cycle policy, as well as a method to efficiently find a reasonable learning rate for an application (LR range test) (See @Smith2015, @Smith2017 and @Smith2018)
+[//]: # (Leslie Smith challenged conventional wisdom on deep learning optimisation when he presented his work on Cyclic Learning Rates and the One cycle policy, as well as a method to efficiently find a reasonable learning rate for an application (LR range test) (See @Smith2015, @Smith2017 and @Smith2018))
+Based on work by Leslie Smith (@Smith2015, @Smith2017 and @Smith2018)
 
-* LR range test:
-During one (or a few) epochs, we train a given network with increasing(lineraly or exponentially) LR $\alpha$ for each training iteration (i.e for each batch). We record the loss until $\alpha$ is too big and the loss starts diverging and we obtain such a curve. 
-![](Images/art2_courbe_lr.png)
-Then we choose an $\alpha$ one order of magnitude below the minimum, to be safe away from divergence, for the upper bound. The lower bound can be set to $\frac{1}{3}$ or $\frac{1}{4}$ of the upper bound.
+\begin{wrapfigure}{R}{.5\textwidth}  
+\begin{center}
+\vspace{-0.5cm}
+\includegraphics[width=0.5\textwidth]{Images/art2_courbe_lr.png}  
+\end{center}
+\end{wrapfigure}
+
+__LR range test:__\
+During one (or a few) epochs, we train a given network with increasing $\alpha$ for each training iteration (i.e for each batch). 
+
+[//]: <> (We record the loss until $\alpha$ is too big and the loss starts diverging and we obtain such a curve. Then we choose an $\alpha$ one order of magnitude below the minimum, to be safe away from divergence, for the upper bound. The lower bound can be set to $\frac{1}{3}$ or $\frac{1}{4}$ of the upper bound.)
 
 ## Challenging conventional wisdom
 ### Cyclic Learning Rates and One-Cycle Policy
-Leslie Smith challenged conventional wisdon on deep learning optimisation when he presented his work on Cyclic Learning Rates and the One cycle policy, as well as a method to efficiently find a reasonable learning rate for an application (LR range test) (See @Smith2015, @Smith2017 and @Smith2018)
+[//]: # (Leslie Smith challenged conventional wisdom on deep learning optimisation when he presented his work on Cyclic Learning Rates and the One cycle policy, as well as a method to efficiently find a reasonable learning rate for an application (LR range test) (See @Smith2015, @Smith2017 and @Smith2018))
+Based on work by Leslie Smith (@Smith2015, @Smith2017 and @Smith2018)
 
-* CLR: 
-Learning rate oscillates between two bounds as found by the LR Range test
+__CLR:__\
+Learning rate oscillates between two bounds found with the LR Range test
 ![](Images/keras_clr_triangular.png)
 
 ## Challenging conventional wisdom
 ### Cyclic Learning Rates and One-Cycle Policy
-Leslie Smith challenged conventional wisdon on deep learning optimisation when he presented his work on Cyclic Learning Rates and the One cycle policy, as well as a method to efficiently find a reasonable learning rate for an application (LR range test) (See @Smith2015, @Smith2017 and @Smith2018)
+[//]: # (Leslie Smith challenged conventional wisdom on deep learning optimisation when he presented his work on Cyclic Learning Rates and the One cycle policy, as well as a method to efficiently find a reasonable learning rate for an application (LR range test) (See @Smith2015, @Smith2017 and @Smith2018))
+Based on work by Leslie Smith (@Smith2015, @Smith2017 and @Smith2018)
 
-* OneCycle policy: 
-Modification of the CLR method where there is only a single cycle with $\alpha$ decreasing further than the lower bound in the last iterations. This algorithm has been shown to reach scores as good or better than very fine-tuned networks in many less training iterations
-![](Images/OneCyclePolicy.jpeg) ![](Images/SuperConv.png)
+__OneCycle policy:__\
+Modification of the CLR method where there is only a single cycle with $\alpha$ decreasing further than the lower bound in the last iterations.
 
-## My results with the previously mentioned methods
+![](Images/OneCyclePolicy.jpeg){width=50%} ![](Images/SuperConv.png){width=50%}
 
-LR finder:
+## My results with the previously mentioned methods - LR Range test
+
+SGD, no regularisation, no momentum
 
 ```{r}
 optimLR = read.csv("Results/OptimLR.csv")
@@ -296,21 +345,23 @@ chosenPoint.low = which.min((optimLR$lr-3*10^-2)^2)
 chosenPoint.max = which.min((optimLR$lr-2*10^-1)^2)
 
 
-optimLR[30:nrow(optimLR),] %>% ggplot(aes(x = lr, y = loss))+geom_line()+
+optimLR[30:nrow(optimLR),] %>% ggplot(aes(x = lr, y = loss))+geom_line(size = 1.5)+
     #geom_point(data = optimLR[c(chosenPoint.low, chosenPoint.max),], aes(x = lr, y = loss))+
   scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
               labels = trans_format("log10", math_format(10^.x)),
               minor_breaks = minor_breaks)+
   annotation_logticks(sides="b")+theme_bw()+
   ggtitle("LR 'calibration' curve for Resnet18")+
-  geom_vline(data = data.frame(x = c(5*10^-2, 2*10^-1)), aes(xintercept = x), linetype = 2)
+  geom_vline(data = data.frame(x = c(5*10^-2, 2*10^-1)), aes(xintercept = x), linetype = 2, size = 1.5)+
+    theme(text=element_text(size=21))
 
 
 
 
 
 ```
-## My results with the previously mentioned methods
+
+## My results with the previously mentioned methods - CLR
 
 ```{r}
 CLRrun = read.csv("Results/CLRTrainTestLoss1.csv")
@@ -323,17 +374,23 @@ LastTrain = CLRrun %>% summarise(LastValue = last(Train.loss))
 
 CLRrun %>% pivot_longer(-c(Epoch), names_to = "Loss", values_to = "MAE") %>%
   ggplot(aes(x = Epoch, y = MAE))+
-  geom_path(aes(linetype = Loss))+
+  geom_path(aes(linetype = Loss), size = 1.5)+
   ylim(0,60)+theme_minimal()+
   scale_color_brewer(palette = "Paired")+
-  ggtitle("Training curves with a 'Reduce On Plateau' LR schedule")+
-  geom_text(data = LastTest, aes(x=-Inf, y = -Inf, label=round(LastValue,2)), hjust= -12, vjust = -20, show.legend = F, fontface = 2)+
-  geom_text(data = LastTrain, aes(x=-Inf, y = -Inf, label=round(LastValue,2)), hjust= -16, vjust = -16, show.legend = F,
-            fontface = 1)
+  ggtitle("Training curves with a CLR schedule")+
+  geom_text(data = LastTest, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
+            hjust= -6, vjust = -10, show.legend = F, fontface = 2, size = 10)+
+  geom_text(data = LastTrain, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
+            hjust= -8, vjust = -7, show.legend = F,fontface = 1, size = 10)+
+  theme(text=element_text(size=21))
 ```
 
+## Last minute surprise!
+I discovered this great image processing tool called CHALE (a kind of adaptive histogram equalisation algortihm) which makes the images sharper (more in appendix if interested)
+![](Images/ImgGridRESCALEDCROPPEd.png){width=50%} ![](Images/CHALESIMPLE.png){width=50%}
+
 ## Incorporating CHALE and the OneCycle policy
-Incroproating CHALE for shaper images as well as regularisation L2 norm and OneCyclePolicy
+Incorporating CHALE for shaper images as well as regularisation L2 norm and OneCyclePolicy
 ```{r}
 CHALEOptiLR0 = read.csv("Results/0CHALEOptLR.csv") # no regularisation
 CHALEOptiLR01 = read.csv("Results/01CHALEOptLR.csv")
@@ -359,22 +416,35 @@ optiRes %>% ggplot(aes(x = lr, y = loss, color = Lambda))+
               labels = trans_format("log10", math_format(10^.x)),
               minor_breaks = minor_breaks)+
   annotation_logticks(sides="b")+theme_minimal()+
-  scale_color_brewer(palette = "Paired")
+  scale_color_brewer(palette = "Paired")+
+    theme(text=element_text(size=21))
 
 # max = 2*10^-1
 
 ```
 
 ## Incorporating CHALE and the OneCycle policy
-Incroproating CHALE for shaper images as well as regularisation L2 norm and OneCyclePolicy
+Incorporating CHALE for sharper images as well as regularisation L2 norm and OneCyclePolicy
 ```{r}
-optiRes %>% filter(Lambda == 0.001) %>% ggplot(aes(x = lr, y = loss, color = Lambda))+
-  geom_line()+
+
+colorChosen = RColorBrewer::brewer.pal(4, "Paired")[3]
+
+# optiRes %>% filter(Lambda == 0.001) %>% ggplot(aes(x = lr, y = loss, color = Lambda))+
+#   geom_line(color = colorChosen)+
+#   scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
+#               labels = trans_format("log10", math_format(10^.x)),
+#               minor_breaks = minor_breaks)+labs(x = "Learning rate", y = "Loss - MAE", color = "Legend")+
+#   annotation_logticks(sides="b")+theme_minimal()
+
+optiRes %>% ggplot(aes(x = lr, y = loss, color = Lambda, alpha = ifelse(Lambda == 0.001, 1, 0.3)))+
+  geom_line(size = 1.5)+scale_alpha(guide="none")+
   scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
               labels = trans_format("log10", math_format(10^.x)),
               minor_breaks = minor_breaks)+
   annotation_logticks(sides="b")+theme_minimal()+
-  scale_color_brewer(palette = "Paired")
+  scale_color_brewer(palette = "Paired")+
+    theme(text=element_text(size=21))
+
 ```
 
 ## Results from 1-Cycle Policy with CHALE
@@ -387,14 +457,130 @@ optiRes %>% filter(Lambda == 0.001) %>% ggplot(aes(x = lr, y = loss, color = Lam
 
 # Unsupervised Learning
 ## Unsupervised learning for clustering by gender
-## Unsupervised learning for image compression 
+
+Not much difference between females and male hand bones!
+![](Images/PCAProject.png){width=50%} ![](Images/KmeansCluster.png){width=50%}
+
+Method:
+\begin{enumerate}
+  \item Decorrelate data through PCA
+  \item Keep components that ensure 90\% explained variance
+  \item Perform K-Means with 2 clusters
+\end{enumerate}
+
+ 
 ## Unsupervised learning for image segmentation (proof of concept)
+
+Using k-means to cluster region of images and using the 'elbow' method to assess which number of clusters is ideal.
+\begin{center}
+\includegraphics[width=0.6\textwidth]{Images/imgsegmentSingle.png}  
+\end{center}
+
+## Unsupervised learning for image segmentation (proof of concept)
+
+Using k-means to cluster region of images and using the 'elbow' method to assess which number of clusters is ideal.
+\begin{center}
+\includegraphics[width=0.9\textwidth]{Images/KmeansImgSegmentScores.png}  
+\end{center}
+
+## Unsupervised learning for image segmentation (proof of concept)
+
+Now testing for a few images with several number of clusters.
+\begin{center}
+\includegraphics[width=0.8\textwidth]{Images/imgsegmentMulti.png}  
+\end{center}
+
+# Discussion
+
+## Discussion
+\newcommand\pro{\item[$+$]}
+\newcommand\con{\item[$-$]}
+
+\begin{itemize}
+  \pro I achieved a MAE of 10 months with a large validation set.
+  \pro I explored a range of optimisation algorithms and learning rate policies
+  \pro I explored interesting applications(segmentation, compression) of unsupervised learning to medical images 
+  \vspace{1cm}
+  \con Discriminating females and males from hand ray images was not possible with deep learning nor unsupervised learning methods
+\end{itemize}
 
 # Limitations and further work
 
+## Limitations and further work
 * Turning regression problem into classification by binning individuals into age groups
 * Trying different neural net architectures, especially simpler ones
 * Deep learning clustering methods such as VAE and t-SNE
-* 
+* Incorporating sex information for age prediction
+* Using images with higher resolution
 
-# Results
+# Appendix
+
+## Unsupervised learning for image compression
+
+## Instead of fixed learning rate changes, reduce on plateau - a slightly smarter choice
+ 
+Optimizer: SGD, patience: 5, $\gamma$: 0.25
+```{r}
+redOnP = read.csv("Results/RedOnPlateauTrainTestLoss1.csv")
+
+redOnP$X = redOnP$X+1
+colnames(redOnP)[1] = "Epoch"
+
+LastTest = redOnP %>% summarise(LastValue = last(Test.loss))
+LastTrain = redOnP %>% summarise(LastValue = last(Train.loss))
+
+redOnP %>% pivot_longer(-c(Epoch), names_to = "Loss", values_to = "MAE") %>%
+  ggplot(aes(x = Epoch, y = MAE))+
+  geom_path(aes(linetype = Loss), size = 1.5)+
+  ylim(0,60)+theme_minimal()+
+  scale_color_brewer(palette = "Paired")+
+  ggtitle("Training curves with a 'Reduce On Plateau' LR schedule")+
+  geom_text(data = LastTest, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
+            hjust= -6, vjust = -10, show.legend = F, size = 10, fontface = 2)+
+  geom_text(data = LastTrain, aes(x=-Inf, y = -Inf, label=round(LastValue,2)),
+            hjust= -8, vjust = -7, show.legend = F, fontface = 1, size = 10)+
+  theme(text=element_text(size=21))
+
+
+```
+
+## Deep Learning for Gender discrimination
+
+Optimizer: Adam, Exponential LR scheduler
+```{r}
+gender = read.csv("Results/GenderTrainTestLoss1.csv")
+
+gender$X = gender$X+1
+colnames(gender)[1] = "Epoch"
+gender$AccTest = gender$AccTest/2611
+
+g1 = gender[,-c(4,5)] %>% pivot_longer(-c(Epoch), names_to = "Loss", values_to = "NLL") %>%
+  ggplot(aes(x = Epoch, y = log10(-NLL)))+
+  geom_path(aes(color= Loss), size = 1.5)+
+  theme_minimal()+
+  scale_color_brewer(palette = "Paired")+
+  ggtitle("Training curves for Gender")+
+  theme(text=element_text(size=21))
+
+g2 = gender[,-c(2,3)] %>% pivot_longer(-c(Epoch), names_to = "Type", values_to = "Accuracy") %>%
+  ggplot(aes(x = Epoch, y = Accuracy))+
+  geom_path(aes(color= Type), size = 1.5)+
+  theme_minimal()+
+  scale_color_brewer(palette = "Paired")+
+  ggtitle("Training curves for Gender")+
+  theme(text=element_text(size=21))
+
+ggarrange(g1, g2, nrow = 2, align = "h")
+
+```
+
+
+## CHALE
+![](Images/histHE.png){width=50%} ![](Images/histHE2.png){width=50%}
+
+![](Images/claheeEx11.jpg){width=50%} ![](Images/claheEx12.jpg){width=50%} 
+
+# References
+
+## References{.allowframebreaks}
+
