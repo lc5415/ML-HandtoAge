@@ -175,26 +175,26 @@ if platform.system() == 'Linux':
     train_loader = getData("FULLdata/training",
                            "boneage-training-dataset.csv",
                            transform=transforms.Compose(
-                               [Rescale(1024),
+                               [Rescale(512),
                                 # RandomCrop(224),
-                                CenterCrop(896),
+                                CenterCrop(448),
                                 CHALE(),
                                 InstanceNorm(),
                                 ToTensor()
                                 ]),
                            batch_size="full", plot=0, save=0)
 
-    test_loader = getData("FULLdata/test",
-                          "boneage-training-dataset.csv",
-                          transform=transforms.Compose(
-                              [Rescale(1024),
-                               # RandomCrop(224),
-                               CenterCrop(896),
-                               CHALE(),
-                               InstanceNorm(),
-                               ToTensor()
-                               ]),
-                          batch_size="full", plot=0, save=0)
+#     test_loader = getData("FULLdata/test",
+#                           "boneage-training-dataset.csv",
+#                           transform=transforms.Compose(
+#                               [Rescale(1024),
+#                                # RandomCrop(224),
+#                                CenterCrop(896),
+#                                CHALE(),
+#                                InstanceNorm(),
+#                                ToTensor()
+#                                ]),
+#                           batch_size="full", plot=0, save=0)
 
 else:
     ## LOAD DATA -- on the fly
@@ -226,7 +226,7 @@ numTrain = len(train_loader)*train_loader.batch_size
 # Initialise X_train as empty array of shape:
 # (number of rows of TrainData = 600)x(number of elements in flatten vector (32*32*3))
 # to hold the training features,
-X_train = np.empty([numTrain, 896*896])
+X_train = np.empty([numTrain, 448**2])
 y_train = np.empty([numTrain])
 # iterate through the filenames in the labelling list so that
 # Xtrain and labels are in same order
@@ -239,19 +239,19 @@ for batch_id, (batch, _, gender) in enumerate(train_loader):
         # update indexing variable i
         i += 1
 
-numTest = len(test_loader)*test_loader.batch_size
-X_test = np.empty([numTest, 896*896])
-y_test = np.empty([numTest])
-# iterate through the filenames in the labelling list so that
-# Xtrain and labels are in same order
-i = 0  # indexing variable i
-for batch_id, (batch, _, gender) in enumerate(test_loader):
-    # reshape image as done previously and store in X_train ith row
-    for image in range(batch.shape[0]):
-        X_test[i, :] = batch[image].flatten()
-        y_test[i] = gender[image]
-        # update indexing variable i
-        i += 1
+# numTest = len(test_loader)*test_loader.batch_size
+# X_test = np.empty([numTest, 896*896])
+# y_test = np.empty([numTest])
+# # iterate through the filenames in the labelling list so that
+# # Xtrain and labels are in same order
+# i = 0  # indexing variable i
+# for batch_id, (batch, _, gender) in enumerate(test_loader):
+#     # reshape image as done previously and store in X_train ith row
+#     for image in range(batch.shape[0]):
+#         X_test[i, :] = batch[image].flatten()
+#         y_test[i] = gender[image]
+#         # update indexing variable i
+#         i += 1
 
 print("Compressing images through PCA")
 pca_compress = PCA()#(n_components = 224*224)
