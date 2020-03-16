@@ -32,7 +32,8 @@ class Rescale(object):
             new_h, new_w = self.output_size
 
         new_h, new_w = int(new_h), int(new_w)
-
+        # resizing with anti-aliasing applies a gaussian filter throughout the images to make resizing smoother
+        # therefore it rescales all inputs
         resized_img = transform.resize(image, (new_h, new_w))
 
         return {'image': resized_img, 'age': sample['age'], 'sex': sample['sex']}

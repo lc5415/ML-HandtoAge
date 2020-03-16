@@ -337,10 +337,26 @@ if __name__ == "__main__":
                                   [Rescale(256),
                                    # RandomCrop(224),
                                    CenterCrop(224),
-                                   CHALE(),
-                                   InstanceNorm(),
+                                   # CHALE(),
+                                   # InstanceNorm(),
                                    ToTensor(),
                                    #Normalize([0.2011], [0.1847])
-                                   ]), batch_size=20, plot = 1)
+                                   ]), batch_size=4, plot = 1)
     # mean_full, std_full = FullBatchStats(data)
     print(time.time()-st)
+
+    st = time.time()
+    data = getData("labelled/train",
+                          "boneage-training-dataset.csv",
+                          transform=transforms.Compose(
+                                  [Rescale(256),
+                                   # RandomCrop(224),
+                                   CenterCrop(224),
+                                   CHALE(),
+                                   # InstanceNorm(),
+                                   ToTensor(),
+                                   #Normalize([0.2011], [0.1847])
+                                   ]), batch_size=4, plot = 1)
+    # mean_full, std_full = FullBatchStats(data)
+    print(time.time()-st)
+

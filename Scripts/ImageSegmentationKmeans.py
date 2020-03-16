@@ -128,9 +128,9 @@ plt.imshow(img)
 plt.show()
 h, w = img.shape
 inertia = []
-fig = plt.figure()
+fig = plt.figure(figsize = (15,15))
 img_index = 1
-for cl in range(2,14):
+for cl in range(2,6):
 
     kmeans_image = KMeans(n_clusters = cl)
 
@@ -139,7 +139,7 @@ for cl in range(2,14):
     cluster_centers = kmeans_image.cluster_centers_
     cluster_labels = kmeans_image.labels_
 
-    plt.subplot(3,4, img_index)
+    plt.subplot(2,2, img_index)
     plt.axis('off')
     plt.imshow(cluster_centers[cluster_labels].reshape(h,w))
     inertia.append((cl, kmeans_image.inertia_))
@@ -149,39 +149,39 @@ for cl in range(2,14):
 plt.savefig("Images/imgsegmentSingle.png")
 plt.show()
 
-for cl, score in inertia:
-    plt.scatter(cl, np.log10(score), c = "black")
-plt.grid()
-plt.xlabel("Number of cluster K")
-plt.ylabel("Inertia (SSD of samples to centroid)")
-plt.savefig("Images/KmeansImgSegmentScores.png")
-plt.show()
+# for cl, score in inertia:
+#     plt.scatter(cl, np.log10(score), c = "black")
+# plt.grid()
+# plt.xlabel("Number of cluster K")
+# plt.ylabel("Inertia (SSD of samples to centroid)")
+# plt.savefig("Images/KmeansImgSegmentScores.png")
+# plt.show()
 
-
-## for several images
-fig = plt.figure()
-gs1 = gridspec.GridSpec(5, 5)
-gs1.update(wspace=0, hspace=0.01)
-img_index = 0
-img_selected = np.random.randint(0, 100, 5)
-for cl in range(2, 7):
-
-    for rand_img in img_selected:
-        img = X_train[rand_img, :].reshape((224, 224))
-
-        kmeans_image = KMeans(n_clusters=cl)
-
-        kmeans_image.fit(img.reshape(-1, 1))
-
-        cluster_centers = kmeans_image.cluster_centers_
-        cluster_labels = kmeans_image.labels_
-
-        plt.subplot(gs1[img_index])
-        plt.axis('off')
-        plt.imshow(cluster_centers[cluster_labels].reshape(h, w))
-        inertia.append((cl, kmeans_image.inertia_))
-        img_index += 1
-
-plt.suptitle("Image segmentation for several images\nfor increasing number of clusters")
-plt.savefig("Images/imgsegmentMulti.png")
-plt.show()
+#
+# ## for several images
+# fig = plt.figure()
+# gs1 = gridspec.GridSpec(5, 5)
+# gs1.update(wspace=0, hspace=0.01)
+# img_index = 0
+# img_selected = np.random.randint(0, 100, 5)
+# for cl in range(2, 7):
+#
+#     for rand_img in img_selected:
+#         img = X_train[rand_img, :].reshape((224, 224))
+#
+#         kmeans_image = KMeans(n_clusters=cl)
+#
+#         kmeans_image.fit(img.reshape(-1, 1))
+#
+#         cluster_centers = kmeans_image.cluster_centers_
+#         cluster_labels = kmeans_image.labels_
+#
+#         plt.subplot(gs1[img_index])
+#         plt.axis('off')
+#         plt.imshow(cluster_centers[cluster_labels].reshape(h, w))
+#         inertia.append((cl, kmeans_image.inertia_))
+#         img_index += 1
+#
+# plt.suptitle("Image segmentation for several images\nfor increasing number of clusters")
+# plt.savefig("Images/imgsegmentMulti.png")
+# plt.show()
