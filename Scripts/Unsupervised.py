@@ -201,26 +201,26 @@ else:
     train_loader = getData("labelled/train/",
                            "boneage-training-dataset.csv",
                            transform=transforms.Compose(
-                               [Rescale(1024),
+                               [Rescale(512),
                                 # RandomCrop(224),
-                                CenterCrop(896),
+                                CenterCrop(448),
                                 CHALE(),
                                 InstanceNorm(),
                                 ToTensor()
                                 ]),
                            plot=0, batch_size="full")
 
-    test_loader = getData("labelled/test/",
-                          "boneage-training-dataset.csv",
-                          transform=transforms.Compose(
-                              [Rescale(1024),
-                               # RandomCrop(224),
-                               CenterCrop(896),
-                               CHALE(),
-                               InstanceNorm(),
-                               ToTensor()
-                               ]),
-                          plot=0, batch_size="full")
+    # test_loader = getData("labelled/test/",
+    #                       "boneage-training-dataset.csv",
+    #                       transform=transforms.Compose(
+    #                           [Rescale(1024),
+    #                            # RandomCrop(224),
+    #                            CenterCrop(896),
+    #                            CHALE(),
+    #                            InstanceNorm(),
+    #                            ToTensor()
+    #                            ]),
+    #                       plot=0, batch_size="full")
 
 numTrain = len(train_loader)*train_loader.batch_size
 # Initialise X_train as empty array of shape:
@@ -253,12 +253,20 @@ for batch_id, (batch, _, gender) in enumerate(train_loader):
 #         # update indexing variable i
 #         i += 1
 
-print("Compressing images through PCA")
-pca_compress = PCA()#(n_components = 224*224)
-print("Compression finished")
-pca_compress.fit(X_train)
+# print("Compressing images through PCA")
+# pca_compress = PCA()#(n_components = 224*224)
+# print("Compression finished")
+# pca_compress.fit(X_train)
+#
+# X_compressed = pca_compress.transform(X_train)
+# np.savetxt("Results/CompressedImages.csv", X_compressed, delimiter=",")
+# # plt.imshow(X_compressed[0,:144].reshape(12,12))
+# # plt.show()
 
-X_compressed = pca_compress.transform(X_train)
-np.savetxt("Results/CompressedImages.csv", X_compressed, delimiter=",")
-# plt.imshow(X_compressed[0,:144].reshape(12,12))
-# plt.show()
+compressed = pd.read_csv("Results/CompressedImages.csv")
+
+compressed = compressed.iloc[:,1:]
+compressed = np.array(compressed)
+
+plt.imshow((compressed[4,:]+100).reshape(100, 100))
+plt.show()

@@ -142,10 +142,8 @@ annotate_figure(fig, top = text_grob("Distribution of image resolution in traini
 ## Centering and scaling
 
 It is widely recommended to center and scale the inputs of a neural networks as this will speed up training by gradient descent (see notes from CS231n Stanford).\
-Several forms of normalisation: Instance Normalisation(IN) and Batch Normalisation(BN):
 
-* __IN: Center and scale each image w.r.t. its mean and standard deviation.__
-* __BN: Center and scale each image w.r.t. the whole batch of images mean and standard deviation__
+In this work: __Images are centered and scaled w.r.t. their mean and standard deviation.__
 
 ## Centering and scaling
 
@@ -390,7 +388,7 @@ I discovered this great image processing tool called CHALE (a kind of adaptive h
 ![](Images/ImgGridRESCALEDCROPPEd.png){width=50%} ![](Images/CHALESIMPLE.png){width=50%}
 
 ## Incorporating CHALE and the OneCycle policy
-Incorporating CHALE for shaper images as well as regularisation L2 norm and OneCyclePolicy
+Incorporating CHALE for sharper images as well as regularisation L2 norm and OneCyclePolicy
 ```{r}
 CHALEOptiLR0 = read.csv("Results/0CHALEOptLR.csv") # no regularisation
 CHALEOptiLR01 = read.csv("Results/01CHALEOptLR.csv")
@@ -449,11 +447,7 @@ optiRes %>% ggplot(aes(x = lr, y = loss, color = Lambda, alpha = ifelse(Lambda =
 
 ## Results from 1-Cycle Policy with CHALE
 
-...A work in progress?
-```{r}
-
-```
-
+...Results are in the oven and never came out of it :(
 
 # Unsupervised Learning
 ## Unsupervised learning for clustering by gender
@@ -516,6 +510,8 @@ Now testing for a few images with several number of clusters.
 # Appendix
 
 ## Unsupervised learning for image compression
+
+Image compression through PCA, did not work! :(
 
 ## Instead of fixed learning rate changes, reduce on plateau - a slightly smarter choice
  
