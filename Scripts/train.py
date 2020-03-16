@@ -240,11 +240,11 @@ def main():
     net = net.double()
     
     ############ TRYING PARALLEL GPU WORK #####################
-    if torch.cuda.device_count() > 1:
-      print("Let's use", torch.cuda.device_count(), "GPUs!")
-      # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-      net = torch.nn.DataParallel(net)
-    ############################################################
+#     if torch.cuda.device_count() > 1:
+#       print("Let's use", torch.cuda.device_count(), "GPUs!")
+#       # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+#       net = torch.nn.DataParallel(net)
+    ##############i don't think this was worth it###################
 
     print("You have loaded a ResNet with {} blocks and {} layers".format(str(chosenArch[0]), str(chosenArch[1])))
     ####################### LEFT IT HERE #################
@@ -269,14 +269,16 @@ def main():
 
         Loss_monitor.loc[len(Loss_monitor)] = [train_loss, test_loss]
         trainLossBatch = trainLossBatch.append(lossPerBatch, ignore_index = True)
+        # save results after each epoch (in case job does not finish)
+        Loss_monitor.to_csv("Results/"+ args.resfile +"TrainTest.csv")
+        trainLossBatch.to_csv("Results/"+args.resfile+"LossPBatch.csv")
+
         scheduler.step()
         #scheduler.step(test_loss) # if using ReduceLROnPlateau scheduler or another that requires this
         
     if args.save_net:
         torch.save(net.state_dict(), "HtoA.pt")
 
-    Loss_monitor.to_csv("Results/"+ args.resfile +"TrainTest.csv")
-    trainLossBatch.to_csv("Results/"+args.resfile+"LossPBatch.csv")
 
 if __name__ == "__main__":
     main()

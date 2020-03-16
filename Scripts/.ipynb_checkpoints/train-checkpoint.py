@@ -130,7 +130,7 @@ def main():
                         help='learning rate (default: 0.4)')
 
     ## may need to do CV for this
-    parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
+    parser.add_argument('--gamma', type=float, default=0.1, metavar='M',
                         help='Learning rate step gamma (default: 0.7)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
@@ -240,25 +240,25 @@ def main():
     net = net.double()
     
     ############ TRYING PARALLEL GPU WORK #####################
-    if torch.cuda.device_count() > 1:
-      print("Let's use", torch.cuda.device_count(), "GPUs!")
-      # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-      net = torch.nn.DataParallel(net)
-    ############################################################
+#     if torch.cuda.device_count() > 1:
+#       print("Let's use", torch.cuda.device_count(), "GPUs!")
+#       # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+#       net = torch.nn.DataParallel(net)
+    ##############i don't think this was worth it###################
 
     print("You have loaded a ResNet with {} blocks and {} layers".format(str(chosenArch[0]), str(chosenArch[1])))
     ####################### LEFT IT HERE #################
 
-    optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay = args.weight_decay, momentum = 0.9)
-
+#     optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay = args.weight_decay, momentum = 0.9)
+    optimizer = optim.Adam(net.parameters(), lr = 0.2, weight_decay = args.weight_decay)
     # change this to multistep after initial training
     # at each iteration the lr is multiplied by args.gamma (=0.7)
     #scheduler = ReduceLROnPlateau(optimizer, factor = 0.25, patience = 5)
-    # scheduler = StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
+    scheduler = StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
     # scheduler = CyclicLR(optimizer, base_lr = 0.02, max_lr = 0.4)
-    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.2,
-                                                    steps_per_epoch=len(train_loader),
-                                                    epochs=args.epochs)
+    #scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.2,
+#                                                     steps_per_epoch=len(train_loader),
+#                                                     epochs=args.epochs)
 
     Loss_monitor = pd.DataFrame(columns=["Train loss", "Test loss"])
     trainLossBatch = pd.DataFrame(columns=["epoch", "batchNum", "Train Loss"])
@@ -269,14 +269,16 @@ def main():
 
         Loss_monitor.loc[len(Loss_monitor)] = [train_loss, test_loss]
         trainLossBatch = trainLossBatch.append(lossPerBatch, ignore_index = True)
+        # save results after each epoch (in case job does not finish)
+        Loss_monitor.to_csv("Results/"+ args.resfile +"TrainTest.csv")
+        trainLossBatch.to_csv("Results/"+args.resfile+"LossPBatch.csv")
+
         scheduler.step()
         #scheduler.step(test_loss) # if using ReduceLROnPlateau scheduler or another that requires this
         
     if args.save_net:
         torch.save(net.state_dict(), "HtoA.pt")
 
-    Loss_monitor.to_csv("Results/"+ args.resfile +"TrainTest.csv")
-    trainLossBatch.to_csv("Results/"+args.resfile+"LossPBatch.csv")
 
 if __name__ == "__main__":
     main()
