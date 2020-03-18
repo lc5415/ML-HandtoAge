@@ -1,9 +1,0 @@
-emoving .gitignore
-Removing .ipynb_checkpoints/
-Removing GenderOptimisingLR.sh
-Removing Jobs/
-Removing OptimisingLR.sh
-Removing Success/
-Removing trainParallel.sh
-Removing trainResNetHeavy.sh
-Removing trainSingle.sh
